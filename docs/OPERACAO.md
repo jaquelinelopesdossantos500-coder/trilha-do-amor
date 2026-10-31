@@ -31,7 +31,7 @@ Se `photos_deleted_at` estiver preenchido, as chaves forem nulas ou o prazo já 
 
 ## Conferir pagamento e eventos
 
-Produzir apenas quando `payment_status='approved'` e a venda estiver vinculada ao mesmo pedido. `paid_at` registra o recebimento da confirmação autenticada; `payment_id` identifica a venda Kirvano. Conferir também a venda no painel Kirvano em caso de dúvida. Visita à página de obrigado, comprovante em imagem ou clique no WhatsApp não aprova o pedido.
+Produzir apenas quando `payment_status='approved'` e a venda estiver vinculada ao mesmo pedido. `paid_at` registra o recebimento da confirmação autenticada; `payment_id` identifica a venda Pulsefy. Conferir também a venda no painel Pulsefy em caso de dúvida. Visita à página de obrigado, comprovante em imagem ou clique no WhatsApp não aprova o pedido.
 
 ```sql
 SELECT event_type, transaction_id, event_time, received_at, processed_at, outcome
@@ -65,7 +65,7 @@ O cliente pode solicitar exclusão no próprio pedido (mesmo navegador), em “P
 
 ## Produzir e entregar
 
-Depois da aprovação, baixar as duas fotos, conferir `scenario_key`, produzir manualmente 1 vídeo vertical de 8s e 3 fotos quadradas e entregar pelo WhatsApp recebido da Kirvano. Não há envio automático. O contato é persistido pelo webhook mesmo quando o comprador fecha o navegador e não inicia conversa.
+Depois da aprovação, baixar as duas fotos, conferir `scenario_key`, produzir manualmente 1 vídeo vertical de 8s e 3 fotos quadradas e entregar pelo WhatsApp recebido do checkout Pulsefy. Não há envio automático. O contato é persistido pelo webhook mesmo quando o comprador fecha o navegador e não inicia conversa.
 
 Para registrar produção/entrega manualmente pelo console (substitua o ID; nunca marque entregue antes de entregar):
 
@@ -77,4 +77,8 @@ UPDATE orders SET production_status='delivered', completed_at=strftime('%Y-%m-%d
 WHERE number='TDA-ID_RECEBIDO' AND payment_status='approved' AND production_status IN ('in_production','ready');
 ```
 
-Reembolsos são feitos na Kirvano, nunca só alterando o D1. O webhook registra reembolso/chargeback e impede restauração por uma aprovação atrasada. Ajustar feriados e eventuais atrasos com o cliente; `delivery_due_at` é uma estimativa de dias úteis sem calendário de feriados integrado.
+Reembolsos são feitos no painel Pulsefy, nunca só alterando o D1. O webhook registra reembolso/chargeback e impede restauração por uma aprovação atrasada. Ajustar feriados e eventuais atrasos com o cliente; `delivery_due_at` é uma estimativa de dias úteis sem calendário de feriados integrado.
+
+## Adicionais comprados no checkout Pulsefy
+
+Conferir `payment_total_cents`, `payment_currency` e `payment_details_json` no mesmo pedido antes da produção. Os detalhes incluem gateway, identificação da cobrança e itens adicionais. O preço-base permanece em `amount_cents`; não presumir que o total pago seja igual ao preço-base quando houver order bumps. A venda Pulsefy fica em `payment_id`.

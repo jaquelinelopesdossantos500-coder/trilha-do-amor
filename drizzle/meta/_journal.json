@@ -36,6 +36,13 @@
       "when": 1793418777758,
       "tag": "0004_photo_cleanup_jobs",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "6",
+      "when": 1793490527751,
+      "tag": "0005_pulsefy_payment_details",
+      "breakpoints": true
     }
   ]
 }

@@ -1,4 +1,12 @@
-# Validação atual — checkout e WhatsApp (31/10/2026)
+# Validação atual — webhook Pulsefy (31/10/2026)
+
+84 testes aprovados, incluindo 17 novos casos do receptor Pulsefy e dois casos de retorno/recibo. TypeScript aprovado. Cobertura: autenticação Bearer sem Origin, teste oficial sem aprovação, envio de acesso sem efeito financeiro, checkout/BRL/preço/correlação, adicionais, reentregas com timestamp diferente, migração de pedidos antigos do mesmo checkout, concorrência, reembolso e acesso por sessão. Nenhuma compra real foi realizada.
+
+O checkout de R$ 27,90, fotos privadas e WhatsApp foram preservados. A configuração do webhook e do retorno no painel Pulsefy é uma etapa do responsável; o teste do painel deve responder HTTP 200 e `test: true`. [Configuração exata](PULSEFY.md).
+
+---
+
+# Histórico — checkout e WhatsApp (31/10/2026)
 
 65 testes aprovados: 13 backend legado, 16 Kirvano, 24 interface/transição e 12 Supabase. TypeScript aprovado. Novas verificações cobrem abertura do checkout sem credenciais de webhook, link exato com `src` estável, bloqueio de URL divergente/pagamento desabilitado, navegação do botão sem repetir upload, WhatsApp oficial nos dois botões e ausência de aprovação falsa em retorno sem sessão ou com falha de rede.
 

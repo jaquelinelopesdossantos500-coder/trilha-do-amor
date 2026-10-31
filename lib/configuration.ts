@@ -1,6 +1,7 @@
 import {storageConfigured,type PhotoStorageEnv} from "./storage-config";
 export const PRICE_CENTS = 2790;
 export const KIRVANO_CHECKOUT_URL = "https://pulsefy.shop/c/o8gsg5c";
+export const PULSEFY_CHECKOUT_URL = KIRVANO_CHECKOUT_URL;
 export const POLICY_VERSION = "2026-10-30-v1";
 export const SCENARIOS = [
   { id: "escadaria", key:"escadaria-dourada", name: "A escadaria dourada", note: "Um caminho de luz até aquele abraço." },
@@ -18,6 +19,7 @@ export type AppEnv = PhotoStorageEnv & {
   POLICIES_APPROVED?: string; AI_PROVIDER_NAME?: string; DELIVERY_DAYS?: string; RETENTION_DAYS?: string;
   UNPAID_RETENTION_HOURS?: string;
   KIRVANO_CHECKOUT_URL?: string; KIRVANO_WEBHOOK_TOKEN?: string; KIRVANO_PRODUCT_ID?: string; KIRVANO_OFFER_ID?: string;
+  PULSEFY_CHECKOUT_URL?: string; PULSEFY_WEBHOOK_TOKEN?: string;
 };
 export function boundedInt(value: string | undefined, fallback: number, min: number, max: number) {
   const n = Number(value); return value && Number.isInteger(n) && n >= min && n <= max ? n : fallback;
@@ -36,19 +38,23 @@ export function kirvanoCheckoutConfigured(env: AppEnv) {
   // Webhook authentication and product/offer validation remain mandatory in kirvanoWebhook.
   return env.PAYMENT_MODE === "kirvano" && env.KIRVANO_CHECKOUT_URL === KIRVANO_CHECKOUT_URL && env.ENABLE_LIVE_PAYMENTS === "true";
 }
+export function pulsefyCheckoutConfigured(env: AppEnv) {
+  return env.PAYMENT_MODE === "pulsefy" && env.PULSEFY_CHECKOUT_URL === PULSEFY_CHECKOUT_URL && env.ENABLE_LIVE_PAYMENTS === "true";
+}
 export function publicConfig(request: Request, env: AppEnv) {
-  const test = localTesting(request, env), sandbox = env.PAYMENT_MODE === "mercadopago-sandbox", kirvano=env.PAYMENT_MODE==="kirvano";
+  const test = localTesting(request, env), sandbox = env.PAYMENT_MODE === "mercadopago-sandbox", kirvano=env.PAYMENT_MODE==="kirvano", pulsefy=env.PAYMENT_MODE==="pulsefy";
   const kirvanoReady=kirvanoCheckoutConfigured(env) && !!(env.DB && storageConfigured(env) && env.SESSION_SECRET);
+  const pulsefyReady=pulsefyCheckoutConfigured(env) && !!(env.DB && storageConfigured(env) && env.SESSION_SECRET);
   const providerConfigured = !!(env.MP_ACCESS_TOKEN && env.MP_WEBHOOK_SECRET && env.MP_COLLECTOR_ID && env.PUBLIC_BASE_URL?.startsWith("https://"));
   return {
     priceCents: PRICE_CENTS, policyVersion: POLICY_VERSION,
-    mode: kirvano?"kirvano":test && env.PAYMENT_MODE === "simulation" ? "simulation" : sandbox ? "sandbox" : env.PAYMENT_MODE === "live" ? "live" : "disabled",
+    mode: pulsefy?"pulsefy":kirvano?"kirvano":test && env.PAYMENT_MODE === "simulation" ? "simulation" : sandbox ? "sandbox" : env.PAYMENT_MODE === "live" ? "live" : "disabled",
     testEnvironment: test || sandbox,
     previewEnvironment: env.APP_ENV === "preview",
     storageReady: !!env.DB && storageConfigured(env),
     sessionReady: !!(env.DB && env.SESSION_SECRET),
-    checkoutReady: kirvanoReady || (test && env.PAYMENT_MODE === "simulation") ||
-      (!kirvano && providerConfigured && (sandbox || (env.PAYMENT_MODE === "live" && env.APP_ENV === "production" && env.ENABLE_LIVE_PAYMENTS === "true" && businessReady(env)))),
+    checkoutReady: pulsefyReady || kirvanoReady || (test && env.PAYMENT_MODE === "simulation") ||
+      (!pulsefy && !kirvano && providerConfigured && (sandbox || (env.PAYMENT_MODE === "live" && env.APP_ENV === "production" && env.ENABLE_LIVE_PAYMENTS === "true" && businessReady(env)))),
     deliveryDays: boundedInt(env.DELIVERY_DAYS, 2, 1, 90),
     retentionDays: boundedInt(env.RETENTION_DAYS, 30, 1, 90),
     unpaidRetentionHours: boundedInt(env.UNPAID_RETENTION_HOURS, 48, 1, 168),

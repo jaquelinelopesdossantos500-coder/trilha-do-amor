@@ -8,6 +8,8 @@ import { visibleOrder, type OrderRow } from "./order-types";
 import { audit, getOrder, customerOrder, deletePhotos } from "./repository";
 import { createPreference, validWebhook, mercadoFetch, applyProviderPayment, reconcile, type ProviderPayment } from "./payments";
 import { createKirvanoCheckout, kirvanoWebhook } from "./kirvano";
+import { createHostedCheckout } from "./hosted-checkout";
+import { pulsefyWebhook } from "./pulsefy";
 
 const json = (data: unknown, status = 200, headers?: HeadersInit) => Response.json(data, { status, headers });
 const contacts = z.object({ name: z.string().trim().min(2).max(100), email: z.string().trim().email().max(200), whatsapp: z.string().transform(s=>s.replace(/\D/g,"")).refine(s=>/^(55)?[1-9]\d{9,10}$/.test(s)) });
@@ -71,9 +73,9 @@ async function checkout(request: Request, env: AppEnv, id: string) {
   if (o.upload_state !== "ready" || o.photos_deleted_at || o.photos_expires_at <= new Date().toISOString()) throw new ApiError(410,"O prazo de armazenamento das fotos terminou. Inicie um novo pedido.");
   if (o.payment_status === "approved") return json({approved:true,order:visibleOrder(o)});
   if (["refunded","cancelled"].includes(o.payment_status)) throw new ApiError(409,"Este pedido foi encerrado. Crie um novo reencontro.");
-  if(config.mode==="kirvano"){
+  if(config.mode==="kirvano"||config.mode==="pulsefy"){
     if(!storageConfigured(env))throw new ApiError(503,"O envio das fotos precisa ser concluído antes do pagamento.");
-    const result=await createKirvanoCheckout(env,o);return json({...result,order:visibleOrder(await getOrder(env,id))});
+    const result=config.mode==="pulsefy"?await createHostedCheckout(env,o,"pulsefy"):await createKirvanoCheckout(env,o);return json({...result,order:visibleOrder(await getOrder(env,id))});
   }
   const supplied=await readJSON(request), parsed=Object.keys(supplied).length?contacts.safeParse(supplied):null;
   if (parsed&&!parsed.success) throw new ApiError(400,"Os dados de checkout informados não são válidos.");
@@ -124,6 +126,7 @@ async function route(request: Request,env: AppEnv): Promise<Response> {
   if (path==="/api/config" && method==="GET") return json(publicConfig(request,env));
   if (!env.DB) throw new ApiError(503,"Não foi possível acessar o pedido agora. Tente novamente.");
   if(path==="/api/webhooks/kirvano"&&method==="POST")return json(await kirvanoWebhook(request,env));
+  if(path==="/api/webhooks/pulsefy"&&method==="POST")return json(await pulsefyWebhook(request,env));
   const webhook=path==="/api/webhooks/mercadopago";
   if (!["GET","HEAD"].includes(method) && !webhook) assertOrigin(request);
   if (path==="/api/session" && method==="POST") {

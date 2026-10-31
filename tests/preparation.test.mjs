@@ -320,6 +320,41 @@ test('obrigado mantém status pendente após falha de rede e permite contato com
  assert.equal(container.textContent.includes('Seu pagamento foi confirmado'),false);
 });
 
+test('retorno Pulsefy mostra confirmação real, total com adicionais e WhatsApp com o mesmo ID',async()=>{
+ browser.localStorage.setItem('tda_order_id',orderId);let uploads=0;
+ const approved={...order,paymentStatus:'approved',productionStatus:'awaiting_production',paymentTotalCents:5170,paymentCurrency:'BRL',purchasedExtras:[{productId:'restauracao',name:'Restauração de foto',amountCents:890},{productId:'musica',name:'Música personalizada',amountCents:1490}]};
+ globalThis.fetch=async path=>{
+  if(path==='/api/config')return Response.json({...config,mode:'pulsefy',testEnvironment:false,sessionReady:true,whatsapp:'5553991905194'});
+  if(path==='/api/session')return Response.json({ok:true});
+  if(path==='/api/orders/'+orderId)return Response.json({order});
+  if(path===`/api/orders/${orderId}/reconcile`)return Response.json({order:approved});
+  if(path==='/api/orders'){uploads++;throw new Error('Upload duplicado');}
+  throw new Error('Unexpected endpoint: '+path);
+ };
+ await act(async()=>root.render(React.createElement(Funnel,{initialReturn:true})));await waitFor(()=>container.querySelector('.status-chip'));
+ assert.equal(container.textContent.includes('Seu pagamento foi confirmado'),false);
+ await click([...container.querySelectorAll('button')].find(b=>b.textContent.includes('CONSULTAR PAGAMENTO')));
+ assert.match(container.textContent,/Seu pagamento foi confirmado/);assert.match(container.querySelector('.receipt').textContent,/51,70/);
+ assert.deepEqual([...container.querySelectorAll('.receipt-extra')].map(x=>x.textContent.split(' · ')[0]),['Restauração de foto','Música personalizada']);
+ assert.equal(uploads,0);assert.equal(browser.localStorage.getItem('tda_order_id'),orderId);assert.equal(container.textContent.includes('Kirvano'),false);
+ assert.match(new URL(container.querySelector('.material-whatsapp').href).searchParams.get('text'),/TA-TESTE/);
+});
+
+test('consulta de reembolso no retorno Pulsefy não mantém mensagem de aprovação ou espera',async()=>{
+ browser.localStorage.setItem('tda_order_id',orderId);
+ globalThis.fetch=async path=>{
+  if(path==='/api/config')return Response.json({...config,mode:'pulsefy',testEnvironment:false,sessionReady:true,whatsapp:'5553991905194'});
+  if(path==='/api/session')return Response.json({ok:true});
+  if(path==='/api/orders/'+orderId)return Response.json({order});
+  if(path===`/api/orders/${orderId}/reconcile`)return Response.json({order:{...order,paymentStatus:'refunded',productionStatus:'cancelled'}});
+  throw new Error('Unexpected endpoint: '+path);
+ };
+ await act(async()=>root.render(React.createElement(Funnel,{initialReturn:true})));await waitFor(()=>container.querySelector('.status-chip'));
+ await click([...container.querySelectorAll('button')].find(b=>b.textContent.includes('CONSULTAR PAGAMENTO')));
+ assert.match(container.textContent,/Reembolsado/);assert.equal(container.querySelector('.status-chip'),null);
+ assert.equal(container.textContent.includes('Seu pagamento foi confirmado'),false);assert.match(container.querySelector('.material-whatsapp').textContent,/FALAR COM O ATENDIMENTO/);
+});
+
 test('retorno pendente nunca mostra aprovação mesmo com armazenamento temporariamente indisponível',async()=>{
  browser.localStorage.setItem('tda_order_id',orderId);
  globalThis.fetch=async path=>{

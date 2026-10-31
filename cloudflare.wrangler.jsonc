@@ -38,7 +38,7 @@
   },
   "vars": {
     "APP_ENV": "production",
-    "PAYMENT_MODE": "kirvano",
+    "PAYMENT_MODE": "pulsefy",
     "ENABLE_LIVE_PAYMENTS": "true",
     "WHATSAPP_NUMBER": "5553991905194",
     "PUBLIC_BASE_URL": "https://trilhadoamor.site",
@@ -48,7 +48,8 @@
     "POLICIES_APPROVED": "false",
     "KIRVANO_CHECKOUT_URL": "https://pulsefy.shop/c/o8gsg5c",
     "PHOTO_STORAGE_PROVIDER": "supabase",
-    "SUPABASE_STORAGE_URL": "https://yllbzrbyjaaksdsqcmiq.supabase.co/functions/v1/tda-photo-storage"
+    "SUPABASE_STORAGE_URL": "https://yllbzrbyjaaksdsqcmiq.supabase.co/functions/v1/tda-photo-storage",
+    "PULSEFY_CHECKOUT_URL": "https://pulsefy.shop/c/o8gsg5c"
   },
   "observability": {
     "enabled": true,

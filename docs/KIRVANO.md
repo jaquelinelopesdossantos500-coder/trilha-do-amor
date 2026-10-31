@@ -1,5 +1,7 @@
 # Integração Kirvano
 
+> Histórico do adaptador legado. A integração ativa agora é Pulsefy; configuração e validação em [PULSEFY.md](PULSEFY.md). Os IDs e secrets Kirvano abaixo não são necessários para o webhook Pulsefy.
+
 ## Contrato implementado
 
 Destino do botão de checkout informado pelo responsável: `https://pulsefy.shop/c/o8gsg5c`.

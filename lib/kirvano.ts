@@ -1,29 +1,15 @@
-import {photoStorage} from "./photo-storage";
-import {storageConfigured} from "./storage-config";
 import { timingSafeEqual } from "node:crypto";
 import { z } from "zod";
-import { KIRVANO_CHECKOUT_URL, addBusinessDays, boundedInt, kirvanoCheckoutConfigured, type AppEnv } from "./configuration";
-import { ApiError, hash, randomToken, readJSON } from "./security";
+import { addBusinessDays, boundedInt, type AppEnv } from "./configuration";
+import { ApiError, hash, readJSON } from "./security";
+import { createHostedCheckout } from "./hosted-checkout";
 import { audit, getOrder } from "./repository";
 import type { OrderRow } from "./order-types";
 
 // Official references and the unverified deployment prerequisites are recorded in docs/KIRVANO.md.
 // Correlation uses the documented utm.src field. It is never used as authorization for photos.
 export async function createKirvanoCheckout(env:AppEnv, order:OrderRow) {
-  if(!kirvanoCheckoutConfigured(env))throw new ApiError(503,"Não foi possível iniciar o pagamento agora. Tente novamente mais tarde.");
-  if(order.upload_state!=="ready"||order.photos_deleted_at||order.photos_expires_at<=new Date().toISOString())throw new ApiError(410,"As fotos precisam estar salvas antes do pagamento. Reenvie-as para continuar.");
-  if(!storageConfigured(env)||!order.self_key||!order.loved_key)throw new ApiError(503,"Não foi possível confirmar o envio das fotos. Tente novamente.");
-  const stored=await Promise.all([photoStorage(env).head(order.self_key),photoStorage(env).head(order.loved_key)]);
-  if(stored.some(photo=>!photo))throw new ApiError(410,"As fotos deste pedido não estão disponíveis. Inicie um novo pedido para reenviá-las.");
-  if(order.payment_provider&&order.payment_provider!=="kirvano")throw new ApiError(409,"Este pedido pertence a outro meio de pagamento. Inicie um novo pedido.");
-  const candidate="tda_"+randomToken().slice(0,40),now=new Date().toISOString();
-  await env.DB!.prepare("UPDATE orders SET checkout_reference=COALESCE(checkout_reference,?),payment_provider='kirvano',updated_at=? WHERE id=? AND (payment_provider IS NULL OR payment_provider='kirvano')").bind(candidate,now,order.id).run();
-  const saved=await getOrder(env,order.id);
-  if(!saved.checkout_reference)throw new ApiError(503,"Não foi possível vincular o pagamento ao pedido. Tente novamente.");
-  const url=new URL(KIRVANO_CHECKOUT_URL);url.searchParams.set("src",saved.checkout_reference);
-  await env.DB!.prepare("UPDATE orders SET checkout_url=? WHERE id=?").bind(url.toString(),order.id).run();
-  await audit(env,order.id,"kirvano_checkout_created");
-  return {url:url.toString()};
+  return createHostedCheckout(env,order,"kirvano");
 }
 
 const product=z.object({id:z.string().min(1).max(100),offer_id:z.string().min(1).max(100),price:z.string().max(40),is_order_bump:z.boolean()});
