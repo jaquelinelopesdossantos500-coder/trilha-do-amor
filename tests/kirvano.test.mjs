@@ -4,7 +4,7 @@ import {readFile,readdir} from 'node:fs/promises';
 import {createRequire} from 'node:module';
 import {handleApi,maintenance} from '../.sites-runtime/tests/backend.mjs';
 const {Miniflare}=createRequire(import.meta.resolve('wrangler/package.json'))('miniflare');
-const official='https://pay.kirvano.com/abed794c-74c4-4493-810f-b9a4708a56e4';
+const official='https://pulsefy.shop/c/o8gsg5c';
 let mf,env,photo,ip=0,saleSequence=0;
 before(async()=>{
  mf=new Miniflare({modules:true,script:'export default {fetch(){return new Response("ok")}}',compatibilityDate:'2026-05-15',d1Databases:{DB:'kirvano-test-db'},r2Buckets:['BUCKET'],cf:false});

@@ -16,7 +16,7 @@ before(async()=>{
  privateJwk=await crypto.subtle.exportKey('jwk',pair.privateKey);publicJwk=await crypto.subtle.exportKey('jwk',pair.publicKey);signingKey=pair.privateKey;
  gateway=createPhotoGateway({url:'https://abcdefghijklmnopqrst.supabase.co',serverKey:'sb_secret_FICTIONAL_TEST_ONLY',publicKey:publicJwk});
  mf=new Miniflare({modules:true,script:'export default {fetch(){return new Response("ok")}}',compatibilityDate:'2026-05-15',d1Databases:{DB:'supabase-storage-test'},cf:false});
- env={DB:await mf.getD1Database('DB'),APP_ENV:'production',SESSION_SECRET:'FICTIONAL_TEST_ONLY',PHOTO_STORAGE_PROVIDER:'supabase',SUPABASE_STORAGE_URL:endpoint,SUPABASE_STORAGE_PRIVATE_KEY:JSON.stringify(privateJwk),PAYMENT_MODE:'kirvano',ENABLE_LIVE_PAYMENTS:'true',KIRVANO_CHECKOUT_URL:'https://pay.kirvano.com/abed794c-74c4-4493-810f-b9a4708a56e4',KIRVANO_PRODUCT_ID:'FICTIONAL_PRODUCT',KIRVANO_OFFER_ID:'FICTIONAL_OFFER',KIRVANO_WEBHOOK_TOKEN:'FICTIONAL_TOKEN'};
+ env={DB:await mf.getD1Database('DB'),APP_ENV:'production',SESSION_SECRET:'FICTIONAL_TEST_ONLY',PHOTO_STORAGE_PROVIDER:'supabase',SUPABASE_STORAGE_URL:endpoint,SUPABASE_STORAGE_PRIVATE_KEY:JSON.stringify(privateJwk),PAYMENT_MODE:'kirvano',ENABLE_LIVE_PAYMENTS:'true',KIRVANO_CHECKOUT_URL:'https://pulsefy.shop/c/o8gsg5c',KIRVANO_PRODUCT_ID:'FICTIONAL_PRODUCT',KIRVANO_OFFER_ID:'FICTIONAL_OFFER',KIRVANO_WEBHOOK_TOKEN:'FICTIONAL_TOKEN'};
  for(const file of (await readdir('drizzle')).filter(f=>f.endsWith('.sql')).sort())for(const sql of (await readFile('drizzle/'+file,'utf8')).split('--> statement-breakpoint').map(s=>s.trim()).filter(Boolean))await env.DB.prepare(sql).run();
  photo=await readFile('tests/fixtures/foto-teste.png');
  globalThis.fetch=async(url,options={})=>{

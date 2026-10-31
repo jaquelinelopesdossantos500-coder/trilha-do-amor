@@ -1,6 +1,6 @@
 import {storageConfigured,type PhotoStorageEnv} from "./storage-config";
 export const PRICE_CENTS = 2790;
-export const KIRVANO_CHECKOUT_URL = "https://pay.kirvano.com/abed794c-74c4-4493-810f-b9a4708a56e4";
+export const KIRVANO_CHECKOUT_URL = "https://pulsefy.shop/c/o8gsg5c";
 export const POLICY_VERSION = "2026-10-30-v1";
 export const SCENARIOS = [
   { id: "escadaria", key:"escadaria-dourada", name: "A escadaria dourada", note: "Um caminho de luz até aquele abraço." },

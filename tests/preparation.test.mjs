@@ -272,7 +272,7 @@ test('pós-compra consulta o status real e monta WhatsApp com o ID sem exigir co
 
 test('criar minha homenagem redireciona para o checkout Kirvano sem repetir upload',async()=>{
  browser.localStorage.setItem('tda_order_id',orderId);let uploads=0,checkoutCalls=0,destination;
- const checkoutUrl='https://pay.kirvano.com/abed794c-74c4-4493-810f-b9a4708a56e4?src=tda_'+'b'.repeat(40);
+ const checkoutUrl='https://pulsefy.shop/c/o8gsg5c?src=tda_'+'b'.repeat(40);
  const originalLocation=globalThis.location;
  globalThis.location={search:'',assign:url=>{destination=url;}};
  try{

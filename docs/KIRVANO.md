@@ -2,7 +2,7 @@
 
 ## Contrato implementado
 
-Checkout obrigatório: `https://pay.kirvano.com/abed794c-74c4-4493-810f-b9a4708a56e4`.
+Destino do botão de checkout informado pelo responsável: `https://pulsefy.shop/c/o8gsg5c`.
 
 O navegador envia apenas cenário e duas fotos. O backend gera o UUID interno e o número `TDA-` com 16 caracteres hexadecimais aleatórios, registra o cenário canônico e guarda as imagens privadas. Somente depois de confirmar os dois objetos privados Supabase, o checkout recebe `?src=tda_<40 caracteres aleatórios>`. Essa referência permanece estável nas novas tentativas do mesmo pedido. Não contém nome, telefone, caminho de arquivo ou credencial para acessar fotos.
 

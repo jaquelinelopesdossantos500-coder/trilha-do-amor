@@ -10,7 +10,7 @@ A implantação atual usa a conta, Worker, domínio e D1 existentes. Não criar 
 | `SUPABASE_STORAGE_PRIVATE_KEY` | Chave privada ECDSA de integração, tipo Secret | Configurada; preservar |
 | `SESSION_SECRET` | Secret aleatório do acesso aos pedidos | Configurado; preservar o valor existente |
 | `PAYMENT_MODE` | `kirvano` | Configurado |
-| `KIRVANO_CHECKOUT_URL` | `https://pay.kirvano.com/abed794c-74c4-4493-810f-b9a4708a56e4` | Configurado |
+| `KIRVANO_CHECKOUT_URL` | `https://pulsefy.shop/c/o8gsg5c` | Configurado |
 | `KIRVANO_PRODUCT_ID` | ID real do produto de R$ 27,90 | Não fornecido |
 | `KIRVANO_OFFER_ID` | ID real da oferta correspondente | Não fornecido; não deduzir da URL |
 | `KIRVANO_WEBHOOK_TOKEN` | Secret de 32 bytes aleatórios ou mais, compartilhado com a URL de webhook | Pendente de configuração segura nos dois serviços |
