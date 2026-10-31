@@ -1,8 +1,14 @@
-# Validação atual — Stories e banner compacto (31/10/2026)
+# Validação atual — checkout e WhatsApp (31/10/2026)
 
-60 testes aprovados: 13 backend legado, 14 Kirvano, 21 interface/transição e 12 Supabase. TypeScript e build aprovados. Gravação, leitura com bytes idênticos, bloqueio de acesso público/anônimo e exclusão foram testados no Supabase real. Security Advisors sem ocorrências. A migração D1 0004 adiciona limpeza durável para uploads com resultado incerto, inclusive após nova tentativa. Veja [SUPABASE.md](SUPABASE.md).
+65 testes aprovados: 13 backend legado, 16 Kirvano, 24 interface/transição e 12 Supabase. TypeScript aprovado. Novas verificações cobrem abertura do checkout sem credenciais de webhook, link exato com `src` estável, bloqueio de URL divergente/pagamento desabilitado, navegação do botão sem repetir upload, WhatsApp oficial nos dois botões e ausência de aprovação falsa em retorno sem sessão ou com falha de rede.
 
-A reautorização da instalação GitHub em 31/10/2026 restabeleceu a gravação em `jaquelinelopesdossantos500-coder/trilha-do-amor`. O commit inicial remoto `b4183ed6d4701658ece4c72b32bebb74c35200b5` confirmou que a recusa 403 anterior foi resolvida. Os fontes e mídias da versão validada são publicados na branch `main`. Pagamento real, IDs de produto/oferta, webhook/retorno Kirvano e WhatsApp oficial continuam pendentes. Não foi realizada compra real.
+A página `/obrigado` foi conferida no navegador em quadros de 360, 375, 390 e 430 px, sem transbordamento horizontal interno. O botão de recebimento e o botão flutuante têm o destino `wa.me/5553991905194`; a mensagem inclui somente a solicitação e o número público do pedido, quando disponível. O cenário e o ID são recuperados pela sessão existente. O harness de QA foi removido antes do build de produção.
+
+Fotografias permanecem no Supabase privado, sessões e metadados no D1, sem novas migrações. A confirmação por webhook continua exigindo token, produto/oferta e validação financeira. Não foi realizada compra real. A configuração do retorno na oferta Kirvano e a homologação do webhook no provedor continuam pendentes de acesso à conta Kirvano; a abertura do checkout não depende delas.
+
+## Histórico da validação de Stories e armazenamento
+
+Na entrega anterior, 60 testes, TypeScript e build passaram. Gravação, leitura com bytes idênticos, bloqueio de acesso público/anônimo e exclusão foram testados no Supabase real. A migração D1 0004 adiciona limpeza durável para uploads com resultado incerto, inclusive após nova tentativa. Veja [SUPABASE.md](SUPABASE.md). A gravação pelo conector GitHub está restabelecida, e os fontes são mantidos na branch `main`.
 
 ## Visual aprovado para publicação
 

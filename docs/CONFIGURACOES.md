@@ -14,8 +14,8 @@ A implantação atual usa a conta, Worker, domínio e D1 existentes. Não criar 
 | `KIRVANO_PRODUCT_ID` | ID real do produto de R$ 27,90 | Não fornecido |
 | `KIRVANO_OFFER_ID` | ID real da oferta correspondente | Não fornecido; não deduzir da URL |
 | `KIRVANO_WEBHOOK_TOKEN` | Secret de 32 bytes aleatórios ou mais, compartilhado com a URL de webhook | Pendente de configuração segura nos dois serviços |
-| `ENABLE_LIVE_PAYMENTS` | `true` após configuração/homologação da integração Kirvano | `false` enquanto faltam dependências técnicas |
-| `WHATSAPP_NUMBER` | Número oficial Business: `55` + DDD + telefone, só dígitos | Não fornecido |
+| `ENABLE_LIVE_PAYMENTS` | Autoriza abrir o checkout hospedado informado pelo responsável | `true`; não aprova pagamentos nem dispensa autenticação de webhook |
+| `WHATSAPP_NUMBER` | Número oficial: `55` + DDD + telefone, só dígitos | `5553991905194`, informado pelo responsável |
 | `PUBLIC_BASE_URL` | `https://trilhadoamor.site` | Configurado |
 | `DELIVERY_DAYS` | Dias úteis de produção | `2`; confirmar prazo praticado no checkout |
 | `RETENTION_DAYS` | Retenção das fotos após primeira confirmação de pagamento | `30` |

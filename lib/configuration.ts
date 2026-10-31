@@ -31,9 +31,14 @@ export function businessReady(env: AppEnv) {
     env.SUPPORT_EMAIL && env.AI_PROVIDER_NAME && /^55\d{10,11}$/.test(env.WHATSAPP_NUMBER || "") &&
     /^[1-9]\d?$/.test(env.DELIVERY_DAYS || "") && env.POLICIES_APPROVED === "true");
 }
+export function kirvanoCheckoutConfigured(env: AppEnv) {
+  // Opening the hosted checkout is independent of receiving payment notifications.
+  // Webhook authentication and product/offer validation remain mandatory in kirvanoWebhook.
+  return env.PAYMENT_MODE === "kirvano" && env.KIRVANO_CHECKOUT_URL === KIRVANO_CHECKOUT_URL && env.ENABLE_LIVE_PAYMENTS === "true";
+}
 export function publicConfig(request: Request, env: AppEnv) {
   const test = localTesting(request, env), sandbox = env.PAYMENT_MODE === "mercadopago-sandbox", kirvano=env.PAYMENT_MODE==="kirvano";
-  const kirvanoReady=kirvano && !!(env.DB && storageConfigured(env) && env.SESSION_SECRET) && env.KIRVANO_CHECKOUT_URL===KIRVANO_CHECKOUT_URL && !!env.KIRVANO_WEBHOOK_TOKEN && !!env.KIRVANO_PRODUCT_ID && !!env.KIRVANO_OFFER_ID && env.ENABLE_LIVE_PAYMENTS==="true";
+  const kirvanoReady=kirvanoCheckoutConfigured(env) && !!(env.DB && storageConfigured(env) && env.SESSION_SECRET);
   const providerConfigured = !!(env.MP_ACCESS_TOKEN && env.MP_WEBHOOK_SECRET && env.MP_COLLECTOR_ID && env.PUBLIC_BASE_URL?.startsWith("https://"));
   return {
     priceCents: PRICE_CENTS, policyVersion: POLICY_VERSION,

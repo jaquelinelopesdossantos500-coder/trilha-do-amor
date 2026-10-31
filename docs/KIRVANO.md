@@ -8,6 +8,10 @@ O navegador envia apenas cenário e duas fotos. O backend gera o UUID interno e 
 
 A documentação oficial admite `src` no checkout e o retorna em `utm.src` no webhook. O servidor faz correspondência exata com `orders.checkout_reference`. O ID da venda fica em `payment_id`, com índice único por provedor. O UUID da URL do checkout não é presumido como `offer_id`; os IDs de produto e oferta devem ser obtidos no painel ou em payload autorizado da própria Kirvano.
 
+A abertura do checkout hospedado exige o link exato acima, `PAYMENT_MODE=kirvano`, `ENABLE_LIVE_PAYMENTS=true`, sessão e fotos privadas salvas. As credenciais do webhook não bloqueiam esse redirecionamento. A confirmação financeira continua separada: sem token e IDs de produto/oferta configurados, o servidor não aceita uma aprovação automática. Nesse caso, o atendimento confere a venda diretamente na Kirvano e coordena a entrega pelo WhatsApp.
+
+`/obrigado` está disponível com o botão “RECEBA SEU MATERIAL NO WHATSAPP” e botão flutuante para `5553991905194`. A mensagem contém o número público do pedido quando ele é recuperado na sessão. Uma visita sem sessão oferece contato para localizar o pedido, sem divulgar fotos, identificar outro comprador ou afirmar que houve pagamento. O botão apenas abre a conversa; não envia mensagem nem disponibiliza arquivos automaticamente.
+
 ## Autenticação e eventos
 
 Endpoint: `POST https://trilhadoamor.site/api/webhooks/kirvano?token=<SEGREDO_COMPARTILHADO>`.
@@ -30,11 +34,11 @@ Como o payload oficial não documenta um ID único de notificação, o recibo é
 4. Em Produto → Ofertas → editar, configurar “Ir para outra página após aprovado” para `https://trilhadoamor.site/obrigado`. Esta página recupera o pedido no mesmo navegador/sessão. Se a Kirvano usar navegador externo, o cliente poderá informar o ID ao suporte; o ID público isolado não libera fotos ou dados.
 5. Conferir no checkout o produto, R$ 27,90, meios de pagamento, entrega manual de 1 vídeo de 8s + 3 fotos pelo WhatsApp, prazo e suporte reais. Não foi realizada compra real.
 6. Usar o teste de webhook do painel e confirmar logs/HTTP. Um evento `TEST` autenticado só testa conectividade; não prova que uma venda real devolverá `utm.src`. Para homologação completa, executar um mecanismo de teste autorizado da Kirvano que devolva a referência real, produto e oferta. Conferir no D1 o pedido, venda e contatos; repetir a notificação e testar reembolso. Não inventar uma associação se `src` não vier.
-7. Habilitar `ENABLE_LIVE_PAYMENTS=true` somente depois de armazenamento, configuração e homologação concluídos. A autorização para produção já foi dada pelo responsável; a pendência é técnica, não uma nova aprovação comercial.
+7. `ENABLE_LIVE_PAYMENTS=true` libera o redirecionamento solicitado para o checkout hospedado. A aprovação no site permanece condicionada ao webhook autenticado e validado. Não usar parâmetros da página de retorno nem o clique no WhatsApp como comprovação de compra.
 
 ## Estado verificado nesta entrega
 
-Supabase privado configurado e validado com gravação, leitura e exclusão reais; metadados e sessões permanecem no D1. O R2 não é mais uma dependência. IDs Kirvano, secret compartilhado e WhatsApp oficial não foram fornecidos/configurados. O navegador do checkout pediu verificação humana e a inspeção parou nesse ponto. Não foram verificados preço, meios de pagamento ou configuração de retorno no painel. O diretório de plugins não oferece conector Kirvano; o MCP oficial descrito pela empresa exige OAuth e não está conectado nesta sessão. Logo, a correlação está implementada e coberta com payloads oficiais simulados, mas ainda não homologada no provedor. O checkout permanece desabilitado até resolver essas dependências.
+Supabase privado configurado e validado; metadados e sessões permanecem no D1. O R2 não é mais uma dependência. O checkout hospedado foi liberado, e o WhatsApp oficial foi configurado. IDs de produto/oferta e secret compartilhado do webhook continuam pendentes. O navegador do checkout pediu verificação humana e a inspeção parou nesse ponto. Não foram verificados preço, meios de pagamento ou configuração de retorno no painel. O diretório de plugins não oferece conector Kirvano; o MCP oficial descrito pela empresa exige OAuth e não está conectado nesta sessão. A correlação está implementada e coberta com payloads oficiais simulados, mas ainda não homologada no provedor. É necessário cadastrar o retorno `https://trilhadoamor.site/obrigado` na oferta Kirvano e configurar o webhook para que a confirmação automática ocorra sem atendimento manual.
 
 ## Fontes oficiais consultadas em 31/10/2026 UTC
 

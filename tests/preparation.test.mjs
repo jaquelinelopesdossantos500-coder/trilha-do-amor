@@ -257,15 +257,67 @@ test('pós-compra consulta o status real e monta WhatsApp com o ID sem exigir co
  browser.localStorage.setItem('tda_order_id',orderId);
  const approved={...order,number:'TDA-1234567890ABCDEF',paymentStatus:'approved',productionStatus:'awaiting_production',isTest:false};
  globalThis.fetch=async path=>{
-  if(path==='/api/config')return Response.json({...config,mode:'kirvano',testEnvironment:false,sessionReady:true,whatsapp:'5511999999999'});
+  if(path==='/api/config')return Response.json({...config,mode:'kirvano',testEnvironment:false,sessionReady:true,whatsapp:'5553991905194'});
   if(path==='/api/session')return Response.json({ok:true});
   if(path==='/api/orders/'+orderId){requests++;return Response.json({order:approved});}
   throw new Error('Unexpected endpoint: '+path);
  };
  await act(async()=>root.render(React.createElement(Funnel,{initialReturn:true})));await waitFor(()=>container.querySelector('a[href^="https://wa.me/"]'));
  const link=new URL(container.querySelector('a[href^="https://wa.me/"]').href);
- assert.equal(link.pathname,'/5511999999999');assert.equal(link.searchParams.get('text'),`Olá! 💛 Acabei de fazer meu pedido no Trilha do Amor.\n\nMeu ID é: ${approved.number}\n\nGostaria de acompanhar a criação da minha homenagem.`);
+ assert.equal(link.pathname,'/5553991905194');assert.equal(link.searchParams.get('text'),`Olá! 💛 Quero receber o material da minha homenagem do Trilha do Amor pelo WhatsApp.\n\nMeu pedido é: ${approved.number}\n\nPode conferir meu pagamento e me orientar sobre a entrega?`);
+ assert.match(container.querySelector('.material-whatsapp').textContent,/RECEBA SEU MATERIAL NO WHATSAPP/);
+ assert.equal(container.querySelector('.whatsapp-float').href,link.href);
  assert.equal(requests,1);assert.match(container.querySelector('.receipt').textContent,/PagamentoConfirmado/);assert.match(container.textContent,/TDA-1234567890ABCDEF/);
+});
+
+test('criar minha homenagem redireciona para o checkout Kirvano sem repetir upload',async()=>{
+ browser.localStorage.setItem('tda_order_id',orderId);let uploads=0,checkoutCalls=0,destination;
+ const checkoutUrl='https://pay.kirvano.com/abed794c-74c4-4493-810f-b9a4708a56e4?src=tda_'+'b'.repeat(40);
+ const originalLocation=globalThis.location;
+ globalThis.location={search:'',assign:url=>{destination=url;}};
+ try{
+  globalThis.fetch=async(path,options={})=>{
+   if(path==='/api/config')return Response.json({...config,mode:'kirvano',testEnvironment:false,sessionReady:true});
+   if(path==='/api/session')return Response.json({ok:true});
+   if(path==='/api/orders/'+orderId)return Response.json({order});
+   if(path==='/api/orders'){uploads++;throw new Error('Upload duplicado');}
+   if(path===`/api/orders/${orderId}/checkout`){checkoutCalls++;assert.equal(options.method,'POST');assert.deepEqual(JSON.parse(options.body),{});return Response.json({url:checkoutUrl,order});}
+   throw new Error('Unexpected endpoint: '+path);
+  };
+  await act(async()=>root.render(React.createElement(Funnel)));await waitFor(()=>container.querySelector('.checkout-action button'));
+  await click(container.querySelector('.checkout-action button'));
+  assert.equal(destination,checkoutUrl);assert.equal(checkoutCalls,1);assert.equal(uploads,0);assert.equal(browser.localStorage.getItem('tda_order_id'),orderId);
+ }finally{globalThis.location=originalLocation;}
+});
+
+test('obrigado sem sessão de pedido oferece WhatsApp sem inventar aprovação',async()=>{
+ globalThis.fetch=async path=>{
+  if(path==='/api/config')return Response.json({...config,mode:'kirvano',testEnvironment:false,sessionReady:true,whatsapp:'5553991905194'});
+  if(path==='/api/session')return Response.json({ok:true});
+  throw new Error('Unexpected endpoint: '+path);
+ };
+ await act(async()=>root.render(React.createElement(Funnel,{initialReturn:true})));await waitFor(()=>container.querySelector('.material-whatsapp'));
+ assert.match(container.textContent,/Obrigado pela/);assert.match(container.textContent,/conferir o pagamento/);
+ assert.equal(new URL(container.querySelector('.material-whatsapp').href).pathname,'/5553991905194');
+ assert.equal(container.querySelector('.whatsapp-float').href,container.querySelector('.material-whatsapp').href);
+ assert.equal(container.querySelector('.receipt'),null);assert.equal(container.textContent.includes('Seu pagamento foi confirmado'),false);
+});
+
+test('obrigado mantém status pendente após falha de rede e permite contato com o pedido',async()=>{
+ browser.localStorage.setItem('tda_order_id',orderId);let failedChecks=0;
+ globalThis.fetch=async path=>{
+  if(path==='/api/config')return Response.json({...config,mode:'kirvano',testEnvironment:false,sessionReady:true,whatsapp:'5553991905194'});
+  if(path==='/api/session')return Response.json({ok:true});
+  if(path==='/api/orders/'+orderId)return Response.json({order});
+  if(path===`/api/orders/${orderId}/reconcile`){failedChecks++;throw new Error('Network failure');}
+  throw new Error('Unexpected endpoint: '+path);
+ };
+ await act(async()=>root.render(React.createElement(Funnel,{initialReturn:true})));await waitFor(()=>container.querySelector('.status-chip'));
+ const consult=[...container.querySelectorAll('button')].find(button=>button.textContent.includes('CONSULTAR PAGAMENTO'));await click(consult);
+ assert.equal(failedChecks,1);assert.match(container.querySelector('[role="alert"]').textContent,/Confira sua internet/);
+ assert.match(container.querySelector('.status-chip').textContent,/Aguardando confirmação/);
+ assert.match(new URL(container.querySelector('.material-whatsapp').href).searchParams.get('text'),/TA-TESTE/);
+ assert.equal(container.textContent.includes('Seu pagamento foi confirmado'),false);
 });
 
 test('retorno pendente nunca mostra aprovação mesmo com armazenamento temporariamente indisponível',async()=>{

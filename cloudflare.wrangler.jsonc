@@ -39,7 +39,8 @@
   "vars": {
     "APP_ENV": "production",
     "PAYMENT_MODE": "kirvano",
-    "ENABLE_LIVE_PAYMENTS": "false",
+    "ENABLE_LIVE_PAYMENTS": "true",
+    "WHATSAPP_NUMBER": "5553991905194",
     "PUBLIC_BASE_URL": "https://trilhadoamor.site",
     "DELIVERY_DAYS": "2",
     "RETENTION_DAYS": "30",

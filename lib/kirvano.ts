@@ -2,7 +2,7 @@ import {photoStorage} from "./photo-storage";
 import {storageConfigured} from "./storage-config";
 import { timingSafeEqual } from "node:crypto";
 import { z } from "zod";
-import { KIRVANO_CHECKOUT_URL, addBusinessDays, boundedInt, type AppEnv } from "./configuration";
+import { KIRVANO_CHECKOUT_URL, addBusinessDays, boundedInt, kirvanoCheckoutConfigured, type AppEnv } from "./configuration";
 import { ApiError, hash, randomToken, readJSON } from "./security";
 import { audit, getOrder } from "./repository";
 import type { OrderRow } from "./order-types";
@@ -10,7 +10,7 @@ import type { OrderRow } from "./order-types";
 // Official references and the unverified deployment prerequisites are recorded in docs/KIRVANO.md.
 // Correlation uses the documented utm.src field. It is never used as authorization for photos.
 export async function createKirvanoCheckout(env:AppEnv, order:OrderRow) {
-  if(env.KIRVANO_CHECKOUT_URL!==KIRVANO_CHECKOUT_URL || !env.KIRVANO_WEBHOOK_TOKEN || !env.KIRVANO_PRODUCT_ID || !env.KIRVANO_OFFER_ID || env.ENABLE_LIVE_PAYMENTS!=="true")throw new ApiError(503,"Não foi possível iniciar o pagamento agora. Tente novamente mais tarde.");
+  if(!kirvanoCheckoutConfigured(env))throw new ApiError(503,"Não foi possível iniciar o pagamento agora. Tente novamente mais tarde.");
   if(order.upload_state!=="ready"||order.photos_deleted_at||order.photos_expires_at<=new Date().toISOString())throw new ApiError(410,"As fotos precisam estar salvas antes do pagamento. Reenvie-as para continuar.");
   if(!storageConfigured(env)||!order.self_key||!order.loved_key)throw new ApiError(503,"Não foi possível confirmar o envio das fotos. Tente novamente.");
   const stored=await Promise.all([photoStorage(env).head(order.self_key),photoStorage(env).head(order.loved_key)]);

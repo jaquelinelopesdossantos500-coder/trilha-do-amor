@@ -52,6 +52,28 @@ test('F: checkout oficial usa src estável, sem formulário de contatos, somente
  const config=(await call('/api/config')).data;assert.equal(config.checkoutReady,true);assert.equal(JSON.stringify(config).includes(env.KIRVANO_WEBHOOK_TOKEN),false);
  assert.equal((await call('/api/config',{environment:{...env,BUCKET:undefined}})).data.checkoutReady,false);
 });
+test('checkout hospedado abre sem credenciais de webhook e mantém pagamento pendente',async()=>{
+ const environment={...env,KIRVANO_WEBHOOK_TOKEN:undefined,KIRVANO_PRODUCT_ID:undefined,KIRVANO_OFFER_ID:undefined,WHATSAPP_NUMBER:'5553991905194'};
+ const config=(await call('/api/config',{environment})).data;
+ assert.equal(config.checkoutReady,true);assert.equal(config.whatsapp,'5553991905194');
+ const o=await create();
+ const first=await call(`/api/orders/${o.order.id}/checkout`,{method:'POST',cookie:o.cookie,data:{},environment});
+ assert.equal(first.response.status,200,JSON.stringify(first.data));
+ const url=new URL(first.data.url);assert.equal(url.origin+url.pathname,official);assert.match(url.searchParams.get('src'),/^tda_[a-f0-9]{40}$/);
+ const retry=await call(`/api/orders/${o.order.id}/checkout`,{method:'POST',cookie:o.cookie,data:{},environment});
+ assert.equal(retry.data.url,first.data.url);assert.equal(retry.data.order.id,o.order.id);assert.equal((await row(o)).payment_status,'pending');
+ assert.equal((await notify(payload({...o,url}),{environment})).response.status,503);
+ assert.equal((await row(o)).payment_status,'pending');
+});
+test('link divergente, pagamentos desabilitados ou sessão indisponível bloqueiam o checkout',async()=>{
+ const o=await create();
+ for(const override of [{ENABLE_LIVE_PAYMENTS:'false'},{KIRVANO_CHECKOUT_URL:'https://example.test/checkout'},{SESSION_SECRET:undefined}]){
+  const environment={...env,...override};
+  assert.equal((await call('/api/config',{environment})).data.checkoutReady,false);
+  assert.notEqual((await call(`/api/orders/${o.order.id}/checkout`,{method:'POST',cookie:o.cookie,data:{},environment})).response.status,200);
+ }
+ assert.equal((await row(o)).checkout_reference,null);
+});
 test('G: webhook recusa token ausente/incorreto e configuração incompleta',async()=>{
  const o=await prepared(),p=payload(o);
  for(const path of ['/api/webhooks/kirvano','/api/webhooks/kirvano?token=invalid'])assert.equal((await call(path,{method:'POST',data:p})).response.status,401);
