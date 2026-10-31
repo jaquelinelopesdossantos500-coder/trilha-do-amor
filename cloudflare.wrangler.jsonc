@@ -1,0 +1,65 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "trilha-do-amor",
+  "account_id": "eb97df37b19199050ad3505046200f6c",
+  "main": "dist/server/index.js",
+  "no_bundle": true,
+  "compatibility_date": "2026-10-30",
+  "compatibility_flags": [
+    "nodejs_compat"
+  ],
+  "workers_dev": true,
+  "assets": {
+    "directory": "dist/client",
+    "binding": "ASSETS"
+  },
+  "rules": [
+    {
+      "type": "ESModule",
+      "globs": [
+        "**/*.js",
+        "**/*.mjs"
+      ]
+    }
+  ],
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "trilha-do-amor",
+      "database_id": "b456360d-cd3a-49e9-b723-76d2c1c5b077",
+      "migrations_dir": "drizzle"
+    }
+  ],
+  "r2_buckets": [],
+  "triggers": {
+    "crons": [
+      "0 * * * *"
+    ]
+  },
+  "vars": {
+    "APP_ENV": "production",
+    "PAYMENT_MODE": "kirvano",
+    "ENABLE_LIVE_PAYMENTS": "false",
+    "PUBLIC_BASE_URL": "https://trilhadoamor.site",
+    "DELIVERY_DAYS": "2",
+    "RETENTION_DAYS": "30",
+    "UNPAID_RETENTION_HOURS": "48",
+    "POLICIES_APPROVED": "false",
+    "KIRVANO_CHECKOUT_URL": "https://pay.kirvano.com/abed794c-74c4-4493-810f-b9a4708a56e4",
+    "PHOTO_STORAGE_PROVIDER": "supabase",
+    "SUPABASE_STORAGE_URL": "https://yllbzrbyjaaksdsqcmiq.supabase.co/functions/v1/tda-photo-storage"
+  },
+  "observability": {
+    "enabled": true,
+    "head_sampling_rate": 0.1,
+    "redact_query_string": true
+  },
+  "upload_source_maps": false,
+  "routes": [
+    {
+      "pattern": "trilhadoamor.site",
+      "custom_domain": true,
+      "zone_id": "46355bcf5a1c7d7138d508b077f0424d"
+    }
+  ]
+}

@@ -1,0 +1,36 @@
+.site-frame.is-preparing{height:100vh;height:100dvh;min-height:0;padding-top:0;display:flex;flex-direction:column;overflow:hidden}
+.is-preparing>.site-header{flex:none;padding:12px 20px}
+.is-preparing>.stage-preparing{display:flex;flex:1;min-height:0;width:100%;padding-bottom:max(12px,env(safe-area-inset-bottom))}
+.is-preparing>.test-ribbon{flex:none}
+.reunion-preparation{width:100%;flex:1;min-height:0;display:grid;grid-template-rows:auto minmax(0,1fr) auto;gap:14px;text-align:center;opacity:1;transition:opacity 280ms ease}
+.reunion-preparation.is-leaving{opacity:0;pointer-events:none}
+.reunion-preparation-intro h1{font-size:25px;line-height:1.16;letter-spacing:-.7px;text-wrap:balance;margin:0;color:#fff}
+.reunion-preparation-intro h1 span{font-size:.8em;white-space:nowrap}
+.reunion-preparation-intro>p{font-size:11.5px;line-height:1.5;color:#c9c4ba;max-width:310px;margin:7px auto 0}
+.memory-carousel{min-height:0;display:grid;grid-template-rows:minmax(0,1fr) 24px auto;gap:6px}
+.memory-carousel-window{min-height:0;overflow:hidden;position:relative;border:1px solid #44351e;border-radius:18px;background:#0b0906;touch-action:pan-y;user-select:none;box-shadow:0 8px 30px #0008}
+.memory-carousel-track{height:100%;display:flex;transition:transform 350ms ease;will-change:transform}
+.memory-slide{position:relative;flex:0 0 100%;min-width:0;height:100%;margin:0;overflow:hidden}
+.memory-slide>img{width:100%;height:100%;object-fit:contain;object-position:center;pointer-events:none;user-select:none}
+.memory-slide>figcaption{position:absolute;bottom:0;left:0;right:0;padding:42px 16px 14px;background:linear-gradient(180deg,transparent,#000b 55%,#000e);color:#fff;font-size:13px;font-weight:550;line-height:1.4;text-wrap:balance;text-shadow:0 1px 6px #000}
+.memory-pagination{display:flex;justify-content:center;align-items:center;gap:0}
+.memory-pagination>button{display:grid;place-items:center;width:34px;height:24px;padding:0;background:none;border:0;border-radius:8px}
+.memory-pagination>button>span{display:block;width:6px;height:6px;border-radius:5px;background:#575046;transition:width 200ms ease,background 200ms ease}
+.memory-pagination>button.active>span{width:17px;background:#f5c45e}
+.memory-disclaimer{font-size:9.5px;line-height:1.4;color:#9c9383;margin:0}
+.reunion-preparation-bottom{display:grid;grid-template-rows:auto 5px auto 32px;gap:7px;align-items:center}
+.transition-progress-title{font-size:12px;font-weight:600;color:#f6f0e6;line-height:1.4}
+.transition-progress{height:5px;overflow:hidden;border-radius:999px;background:#2c2924}
+.transition-progress>span{height:100%;display:block;border-radius:inherit;transform-origin:left;transform:scaleX(0);background:#f5c45e;transition:transform 100ms linear}
+.transition-save-status{min-height:52px;display:grid;place-items:center;color:#aaa18f;font-size:10px;line-height:1.45;margin:0}
+.transition-error{font-size:10.5px;line-height:1.4;color:#ffd2bb;display:grid;justify-items:center;align-content:center;gap:3px;min-height:52px}
+.transition-error .text-link{display:inline-flex;align-items:center;gap:5px;font-size:11px;min-height:24px}
+.transition-error .icon{width:12px;height:12px}
+.transition-continue{display:inline-flex;align-items:center;justify-content:center;gap:7px;min-height:32px;padding:3px 10px;border:0;border-radius:8px;color:#f5c45e;font-size:12px;font-weight:600;background:none}
+.transition-continue .icon{width:15px;height:15px}
+.transition-continue:disabled{opacity:.4;cursor:default}
+.reunion-preparation .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+@media(max-width:375px){.reunion-preparation-intro h1{font-size:23px}.reunion-preparation{gap:12px}.memory-slide>figcaption{font-size:12px;padding:38px 12px 12px}}
+@media(max-height:650px){.is-preparing>.site-header{padding:8px 20px}.reunion-preparation{gap:9px}.reunion-preparation-intro h1{font-size:21px}.reunion-preparation-intro>p{font-size:10.5px;margin-top:5px}.memory-carousel{gap:4px}.reunion-preparation-bottom{gap:5px;grid-template-rows:auto 5px auto 28px}}
+@media(max-height:650px){.transition-save-status,.transition-error{min-height:48px}}
+@media(prefers-reduced-motion:reduce){.memory-carousel-track,.memory-pagination>button>span,.transition-progress>span,.reunion-preparation{transition:none;will-change:auto}}

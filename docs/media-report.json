@@ -1,0 +1,30 @@
+[
+  {
+    "scenario": "escadaria",
+    "original": "Man_walking_toward_elderly_woman_dd894753(1).mp4",
+    "original_bytes": 2760705,
+    "video_bytes": 276791,
+    "poster_bytes": 26782
+  },
+  {
+    "scenario": "carinho",
+    "original": "Grandfather_caressing_woman's_hair_1ad2aa16(1).mp4",
+    "original_bytes": 2915465,
+    "video_bytes": 227884,
+    "poster_bytes": 43686
+  },
+  {
+    "scenario": "nuvens",
+    "original": "Man_and_woman_reuniting_a4bed141(1).mp4",
+    "original_bytes": 2477176,
+    "video_bytes": 215061,
+    "poster_bytes": 29886
+  },
+  {
+    "scenario": "luz",
+    "original": "Two_women_embracing_in_reunion_39157696(1).mp4",
+    "original_bytes": 3612786,
+    "video_bytes": 401700,
+    "poster_bytes": 46748
+  }
+]

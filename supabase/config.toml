@@ -1,0 +1,5 @@
+# All calls are authenticated inside the function with short-lived ECDSA signatures.
+# No anonymous or browser access to photographs is granted by this setting.
+[functions.tda-photo-storage]
+verify_jwt = false
+entrypoint = "./functions/tda-photo-storage/index.ts"
