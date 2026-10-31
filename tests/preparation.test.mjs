@@ -44,17 +44,18 @@ async function renderPreparation(props={}){
  return callbacks;
 }
 
-test("as três imagens anexadas aparecem na ordem correta em 0, 2 e 4 segundos",async(t)=>{
+test("os três Stories ilustrativos aparecem na ordem correta em 0, 2 e 4 segundos",async(t)=>{
  t.mock.timers.enable({apis:["Date","setTimeout","setInterval"],now:100000});
  let advances=0;await renderPreparation({onContinue:()=>advances++});
  const sources=Array.from(container.querySelectorAll('.memory-slide img'),image=>image.getAttribute('src'));
- assert.deepEqual(sources,["/media/recreations/reencontro-familiar.webp","/media/recreations/memorias-de-familia.webp","/media/recreations/lembranca-especial.webp"]);
- assert.match(activeSlide().textContent,/Um abraço que vive/);
- await tick(t,1999);assert.match(activeSlide().textContent,/Um abraço que vive/);
- await tick(t,1);assert.match(activeSlide().textContent,/O amor atravessa gerações/);
- await tick(t,2000);assert.match(activeSlide().textContent,/nunca deixam nosso coração/);
+ assert.deepEqual(sources,["/media/stories/abraco-na-varanda.webp","/media/stories/cafe-em-familia.webp","/media/escadaria.webp"]);
+ assert.match(activeSlide().textContent,/Tem pessoas que deixam saudade/);
+ await tick(t,1999);assert.match(activeSlide().textContent,/Tem pessoas que deixam saudade/);
+ await tick(t,1);assert.match(activeSlide().textContent,/Uma fotografia pode trazer/);
+ await tick(t,2000);assert.match(activeSlide().textContent,/compartilhar com quem também/);
  assert.equal(container.querySelector('[role="progressbar"]').getAttribute('aria-valuenow'),"66");
  await tick(t,2000);assert.equal(advances,0);assert.ok(container.querySelector('.is-leaving'));
+ assert.equal(container.querySelector('.story-progress button:last-child span').style.transform,'scaleX(1)');
  await tick(t,280);assert.equal(advances,1);
  await tick(t,6000);assert.equal(advances,1);
 });
@@ -89,14 +90,14 @@ test("swipe e indicadores respeitam a imagem escolhida e não repetem o carrosse
   frame.dispatchEvent(new browser.PointerEvent('pointerdown',{bubbles:true,pointerId:1,clientX:250,clientY:100}));
   frame.dispatchEvent(new browser.PointerEvent('pointerup',{bubbles:true,pointerId:1,clientX:100,clientY:105}));
  });
- assert.match(activeSlide().textContent,/O amor atravessa/);
- await tick(t,4500);assert.match(activeSlide().textContent,/O amor atravessa/);
+ assert.match(activeSlide().textContent,/Uma fotografia pode trazer/);
+ await tick(t,4500);assert.match(activeSlide().textContent,/Uma fotografia pode trazer/);
  await click(container.querySelector('[aria-label="Ver imagem 3 de 3"]'));
  await act(async()=>{
   frame.dispatchEvent(new browser.PointerEvent('pointerdown',{bubbles:true,pointerId:2,clientX:250,clientY:100}));
   frame.dispatchEvent(new browser.PointerEvent('pointerup',{bubbles:true,pointerId:2,clientX:100,clientY:100}));
  });
- await tick(t,1500);assert.match(activeSlide().textContent,/nunca deixam nosso coração/);
+ await tick(t,1500);assert.match(activeSlide().textContent,/compartilhar com quem também/);
  assert.equal(container.querySelector('[aria-label="Ver imagem 3 de 3"]').getAttribute('aria-current'),'true');
 });
 
@@ -133,8 +134,8 @@ test("falha no checkpoint da próxima etapa impede o fade e permite tentar novam
 test("movimento reduzido mantém as imagens sob controle manual e dispensa o fade animado",async(t)=>{
  t.mock.timers.enable({apis:["Date","setTimeout","setInterval"],now:100000});
  reduced=true;let advances=0;await renderPreparation({onContinue:()=>advances++});
- await tick(t,4000);assert.match(activeSlide().textContent,/Um abraço que vive/);
- await click(container.querySelector('[aria-label="Ver imagem 2 de 3"]'));assert.match(activeSlide().textContent,/O amor atravessa/);
+ await tick(t,4000);assert.match(activeSlide().textContent,/Tem pessoas que deixam saudade/);
+ await click(container.querySelector('[aria-label="Ver imagem 2 de 3"]'));assert.match(activeSlide().textContent,/Uma fotografia pode trazer/);
  await tick(t,2000);await tick(t,0);assert.equal(advances,1);
 });
 
@@ -301,4 +302,43 @@ test('exclusão de fotos só é enviada após confirmação explícita na págin
  await act(async()=>root.render(React.createElement(Funnel,{initialReturn:true})));await waitFor(()=>container.querySelector('.photo-privacy-control'));
  await click(container.querySelector('.photo-privacy-control .text-link'));assert.equal(deletions,0);assert.match(container.querySelector('.photo-privacy-control [role="alert"]').textContent,/definitivo/);
  await click(container.querySelector('.photo-privacy-control .secondary'));assert.equal(deletions,1);await waitFor(()=>container.textContent.includes('foram excluídas'));assert.match(container.textContent,/foram excluídas/);
+});
+
+test('pausar Stories congela o progresso e impede avanço automático até retomar',async(t)=>{
+ t.mock.timers.enable({apis:['Date','setTimeout','setInterval'],now:100000});
+ let advances=0;await renderPreparation({onContinue:()=>advances++});
+ await tick(t,1000);await click(container.querySelector('[aria-label="Pausar Stories"]'));
+ const progress=container.querySelector('[role="progressbar"]').getAttribute('aria-valuenow');
+ await tick(t,10000);assert.equal(advances,0);assert.equal(container.querySelector('[role="progressbar"]').getAttribute('aria-valuenow'),progress);
+ await click(container.querySelector('[aria-label="Reproduzir Stories"]'));
+ await tick(t,5000);await tick(t,280);assert.equal(advances,1);
+});
+
+test('Stories pausados mantêm Continuar disponível quando o pedido já foi salvo',async(t)=>{
+ t.mock.timers.enable({apis:['Date','setTimeout','setInterval'],now:100000});
+ let advances=0;await renderPreparation({onContinue:()=>advances++});
+ await click(container.querySelector('[aria-label="Pausar Stories"]'));
+ await click(container.querySelector('.transition-continue'));await tick(t,280);assert.equal(advances,1);
+});
+
+test('a oferta usa o cenário real do pedido no banner ilustrativo dos quatro cenários',async()=>{
+ const names={escadaria:'A escadaria dourada',carinho:'O carinho no céu',nuvens:'O abraço nas nuvens',luz:'O abraço na luz'};
+ for(const [scenario,name] of Object.entries(names)){
+  browser.localStorage.clear();await clearDraft();
+  await saveDraft(null,null,{scenario,requestKey,stage:'checkout',orderId});
+  globalThis.fetch=async path=>{
+   if(path==='/api/config')return Response.json({...config,mode:'kirvano',testEnvironment:false});
+   if(path==='/api/session')return Response.json({ok:true});
+   if(path==='/api/orders/'+orderId)return Response.json({order:{...order,scenario}});
+   throw new Error('Unexpected endpoint: '+path);
+  };
+  await act(async()=>root.render(React.createElement(Funnel,{key:scenario})));
+  await waitFor(()=>container.querySelector('.locked-preview-image'));
+  assert.equal(container.querySelector('.locked-preview-image').getAttribute('src'),`/media/${scenario}.webp`);
+  assert.match(container.querySelector('.locked-preview-kicker').textContent,new RegExp(name));
+  assert.match(container.querySelector('.locked-preview-badge').textContent,/Prévia ilustrativa do cenário escolhido/);
+  assert.ok(container.querySelector('.golden-lock svg'));
+  assert.match(container.querySelector('.checkout-action button').textContent,/CRIAR MINHA HOMENAGEM/);
+  assert.match(container.textContent,/Produção manual com IA após o pagamento/);
+ }
 });

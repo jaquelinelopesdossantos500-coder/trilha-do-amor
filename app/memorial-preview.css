@@ -1,0 +1,13 @@
+.locked-memorial-preview{position:relative;isolation:isolate;overflow:hidden;border-radius:15px;border:1px solid #4d3f26;height:160px;background:#15120d;box-shadow:0 8px 26px #0004;animation:memorial-enter .65s ease both}
+.locked-preview-image{position:absolute;z-index:-3;inset:-14px;width:calc(100% + 28px);height:calc(100% + 28px);max-width:none;object-fit:cover;object-position:center 37%;filter:blur(8px);transform:scale(1.045);opacity:.8}
+.locked-preview-depth{position:absolute;z-index:-2;inset:0;background:radial-gradient(ellipse at 50% 30%,#0808080a 5%,#080808b5 100%),linear-gradient(0deg,#080808f2,transparent 70%,#08080875)}
+.locked-preview-light{position:absolute;z-index:-1;inset:0;background:radial-gradient(ellipse at 50% 34%,#f5c45e26,transparent 59%);pointer-events:none}
+.locked-preview-content{position:absolute;inset:0;display:grid;place-items:center;text-align:center}
+.locked-preview-kicker{position:absolute;bottom:29px;left:12px;right:12px;font-size:12px;font-weight:600;line-height:1.4;color:#fff7e7}
+.golden-lock{width:58px;height:58px;display:grid;place-items:center;border-radius:50%;border:1px solid #f7e5b53d;background:linear-gradient(135deg,#fff6da17,#22180e55);box-shadow:inset 0 1px 1px #ffedc51f,0 0 32px #f5c45e17,0 5px 16px #0005;backdrop-filter:blur(5px);animation:lock-enter .8s ease both,lock-glow 3.2s ease 1s 1}
+.golden-lock svg{width:29px;height:35px;filter:drop-shadow(0 3px 4px #0006)}
+.locked-preview-badge{position:absolute;bottom:10px;left:10px;right:10px;color:#d8cbae;font-size:8px;line-height:1.4}
+@keyframes memorial-enter{from{opacity:0;transform:translateY(6px) scale(.99)}to{opacity:1;transform:none}}
+@keyframes lock-enter{from{opacity:0;transform:scale(.96)}to{opacity:1;transform:scale(1)}}
+@keyframes lock-glow{50%{box-shadow:inset 0 1px 1px #ffedc52f,0 0 45px #f5c45e30,0 8px 22px #0005}}
+@media(prefers-reduced-motion:reduce){.locked-memorial-preview,.golden-lock{animation:none}.golden-lock svg{filter:none}}

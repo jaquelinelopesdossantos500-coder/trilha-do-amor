@@ -1,10 +1,16 @@
-# Validação atual — Supabase (31/10/2026)
+# Validação atual — Stories e banner compacto (31/10/2026)
 
-57 testes aprovados: 13 backend legado, 14 Kirvano, 18 interface/transição e 12 Supabase. TypeScript e build aprovados. Gravação, leitura com bytes idênticos, bloqueio de acesso público/anônimo e exclusão foram testados no Supabase real. Security Advisors sem ocorrências. A migração D1 0004 adiciona limpeza durável para uploads com resultado incerto, inclusive após nova tentativa. Veja [SUPABASE.md](SUPABASE.md).
+60 testes aprovados: 13 backend legado, 14 Kirvano, 21 interface/transição e 12 Supabase. TypeScript e build aprovados. Gravação, leitura com bytes idênticos, bloqueio de acesso público/anônimo e exclusão foram testados no Supabase real. Security Advisors sem ocorrências. A migração D1 0004 adiciona limpeza durável para uploads com resultado incerto, inclusive após nova tentativa. Veja [SUPABASE.md](SUPABASE.md).
 
 A reautorização da instalação GitHub em 31/10/2026 restabeleceu a gravação em `jaquelinelopesdossantos500-coder/trilha-do-amor`. O commit inicial remoto `b4183ed6d4701658ece4c72b32bebb74c35200b5` confirmou que a recusa 403 anterior foi resolvida. Os fontes e mídias da versão validada são publicados na branch `main`. Pagamento real, IDs de produto/oferta, webhook/retorno Kirvano e WhatsApp oficial continuam pendentes. Não foi realizada compra real.
 
-## Republicação e recuperação do pedido
+## Visual aprovado para publicação
+
+Autorização explícita recebida: “APROVADO, PODE PUBLICAR”. A versão usa Stories em smartphone CSS, duas novas ilustrações familiares otimizadas e a escadaria existente; total de imagens da sequência: 261.356 bytes. Banner da oferta com 160 px de altura, imagem com blur de 8 px e cadeado/textos nítidos, por cenário.
+
+Build limpo, TypeScript e 60 testes aprovados. QA local conferiu 360×800, 390×844, 430×932, 768×1024 e 1440×900, controles e pausa, passagem automática, recarga com o mesmo pedido e fluxo de pagamento simulado. Nenhuma alteração no backend, esquema, gateway ou webhooks. Bancada temporária removida dos fontes e dos assets de produção. Não foi realizado pagamento real.
+
+## Histórico da republicação Supabase e recuperação do pedido
 
 Em 31/10/2026, a API Cloudflare confirmou HTTP 200 e sucesso na versão `5c06dbf2f7664b659226c5d16d65e71c`. A publicação preservou os 34 assets, DB, os dois secrets, domínio, cron e Supabase; zero bindings R2. Os 51 módulos publicados correspondem ao build já validado, sem alteração no código de execução. A anotação `local-bf0ec84` identifica a fonte local, não um commit remoto GitHub.
 

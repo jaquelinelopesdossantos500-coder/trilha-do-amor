@@ -4,19 +4,19 @@ export const PREPARATION_FADE_MS = 280;
 
 export const PREPARATION_IMAGES = [
   {
-    src: "/media/recreations/reencontro-familiar.webp",
-    alt: "Recriação ilustrativa de um homem abraçando uma senhora em uma varanda com vegetação.",
-    caption: "Um abraço que vive para sempre na memória.",
+    src: "/media/stories/abraco-na-varanda.webp",
+    alt: "Ilustração de uma filha adulta abraçando sua mãe idosa na varanda de uma casa brasileira.",
+    caption: "Tem pessoas que deixam saudade em uma família inteira. 💛",
   },
   {
-    src: "/media/recreations/memorias-de-familia.webp",
-    alt: "Recriação ilustrativa de uma mulher sorrindo ao lado de um senhor idoso ao ar livre.",
-    caption: "O amor atravessa gerações.",
+    src: "/media/stories/cafe-em-familia.webp",
+    alt: "Ilustração de uma neta adulta e sua avó compartilhando um café em uma cozinha brasileira.",
+    caption: "Uma fotografia pode trazer tantas histórias de volta...",
   },
   {
-    src: "/media/recreations/lembranca-especial.webp",
-    alt: "Recriação ilustrativa de uma mulher segurando uma fotografia de um abraço com uma senhora.",
-    caption: "Porque existem pessoas que nunca deixam nosso coração.",
+    src: "/media/escadaria.webp",
+    alt: "Recriação artística de duas pessoas de braços abertos para um reencontro em uma escadaria dourada entre nuvens.",
+    caption: "Uma homenagem para guardar... e compartilhar com quem também sente saudade.",
   },
 ] as const;
 

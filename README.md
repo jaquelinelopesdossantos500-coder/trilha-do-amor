@@ -6,7 +6,7 @@ O site não pede nome, e-mail ou telefone. Esses dados são preenchidos na Kirva
 
 ## Estado da integração
 
-Código integrado, com 57 testes automatizados aprovados. Fotografias migradas para Supabase Storage privado no projeto existente Trilha do Amor; D1 atualizado até a migração 0004 para limpeza durável de uploads interrompidos. A liberação de pagamentos ainda depende de configurar produto/oferta, webhook e retorno na Kirvano, informar o WhatsApp oficial e homologar o retorno de `src` no provedor. Nenhuma compra real foi realizada. Cobranças permanecem bloqueadas enquanto as dependências técnicas não estiverem prontas.
+Código integrado, com 60 testes automatizados aprovados. Fotografias migradas para Supabase Storage privado no projeto existente Trilha do Amor; D1 atualizado até a migração 0004 para limpeza durável de uploads interrompidos. A liberação de pagamentos ainda depende de configurar produto/oferta, webhook e retorno na Kirvano, informar o WhatsApp oficial e homologar o retorno de `src` no provedor. Nenhuma compra real foi realizada. Cobranças permanecem bloqueadas enquanto as dependências técnicas não estiverem prontas.
 
 Repositório do projeto: [jaquelinelopesdossantos500-coder/trilha-do-amor](https://github.com/jaquelinelopesdossantos500-coder/trilha-do-amor), público, com os fontes completos na branch `main`. Em 31/10/2026 a reautorização da instalação GitHub restabeleceu a gravação pelo conector; o commit inicial foi `b4183ed6d4701658ece4c72b32bebb74c35200b5`. A publicação do site utiliza a API Cloudflare, sem deploy automático GitHub configurado. Chaves privadas e dados de pedidos não fazem parte do repositório.
 
@@ -15,7 +15,8 @@ Repositório do projeto: [jaquelinelopesdossantos500-coder/trilha-do-amor](https
 - Quatro cenários com chaves canônicas e prévias MP4 carregadas ao tocar.
 - Duas fotos válidas com prévia, troca antes do envio, reencodificação e remoção de EXIF; sem lista permanente de formatos ou checkbox de política.
 - Upload real idempotente com metadados D1 e fotos no Supabase privado, ID gerado no backend e acesso por sessão.
-- Carrossel com as três imagens fornecidas, swipe, indicadores, progresso de seis segundos e movimento reduzido. O avanço aguarda salvamento real; erro permite retry/revisão, sem inventar ID.
+- Stories ilustrativos em smartphone CSS, com três imagens, swipe, teclado, pausa e progresso de seis segundos. O avanço aguarda salvamento real; erro permite retry/revisão, sem inventar ID.
+- Banner da oferta com a imagem do cenário escolhido desfocada, cadeado vetorial e altura original de 160 px.
 - Oferta sem formulário de contatos. Checkout Kirvano exato com referência aleatória `src` persistida, após confirmar os objetos Supabase.
 - Webhook autenticado, idempotente, com revisão concorrente e proteção contra eventos atrasados/associação de outra venda.
 - `/obrigado`: estado real do pagamento, ID, entrega e WhatsApp configurável; retorno por URL não aprova.
@@ -52,7 +53,7 @@ Os testes usam D1/armazenamento local Miniflare e payloads fictícios baseados n
 - [Kirvano: correlação, autenticação e configuração exata](docs/KIRVANO.md)
 - [Operação manual: localizar pedido, baixar fotos e produzir](docs/OPERACAO.md)
 - [Validação e limites](docs/VALIDACAO.md)
-- [Carrossel e imagens fornecidas](docs/CARROSSEL.md)
+- [Stories e banner compacto aprovados](docs/CARROSSEL.md)
 
 `cloudflare.wrangler.jsonc` guarda apenas identificadores não secretos dos recursos existentes. Tokens/senhas ficam em secrets. Preserve `SESSION_SECRET`, domínio, DB e cron nas atualizações.
 

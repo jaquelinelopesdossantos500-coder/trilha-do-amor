@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import "./preparation.css";
+import "./memorial-preview.css";
 export const metadata: Metadata = {
   title: "Trilha do Amor · Um reencontro para guardar",
   description: "Transforme suas fotos em uma recriação artística de reencontro. Escolha seu cenário e crie uma lembrança especial com o Trilha do Amor.",
