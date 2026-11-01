@@ -53,6 +53,7 @@ Os testes usam D1/armazenamento local Miniflare e payloads fictícios baseados n
 - [Pulsefy: webhook, token e retorno após pagamento](docs/PULSEFY.md)
 - [Resend: confirmação por e-mail e acompanhamento](docs/RESEND.md)
 - [Kirvano: adaptador legado](docs/KIRVANO.md)
+- [Verificação de fotos, cenário e ID do WhatsApp](docs/VERIFICACAO_PEDIDOS.md)
 - [Operação manual: localizar pedido, baixar fotos e produzir](docs/OPERACAO.md)
 - [Validação e limites](docs/VALIDACAO.md)
 - [Stories e banner compacto aprovados](docs/CARROSSEL.md)

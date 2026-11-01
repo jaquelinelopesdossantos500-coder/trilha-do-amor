@@ -27,7 +27,10 @@ async function createOrder(request: Request, env: AppEnv) {
   const scenario=scene.id;
   if (form.get("consent") !== "true" || form.get("policyVersion") !== POLICY_VERSION) throw new ApiError(400,"Atualize a página e envie novamente as fotos para registrar as condições atuais do pedido.");
   let existing = await env.DB!.prepare("SELECT * FROM orders WHERE owner_hash = ? AND request_key = ?").bind(who,key).first<OrderRow>();
-  if (existing?.upload_state === "ready") return json({order:visibleOrder(existing)});
+  if (existing?.upload_state === "ready") {
+    if (existing.scenario !== scenario) throw new ApiError(409,"Este envio já foi registrado com outro cenário. Inicie um novo pedido para alterar as fotos ou o cenário.");
+    return json({order:visibleOrder(existing)});
+  }
   if (existing?.upload_state === "failed" || existing && Date.parse(existing.created_at) < Date.now()-10*60000 && existing.upload_state === "uploading") {
     await deletePhotos(env,existing); await env.DB!.prepare("DELETE FROM orders WHERE id = ? AND upload_state != 'ready'").bind(existing.id).run(); existing=null;
   }
@@ -144,6 +147,14 @@ async function route(request: Request,env: AppEnv,context?: BackgroundContext): 
     return json({ok:true},200,{"Set-Cookie":makeCookie(request,"tda_session",token,30*86400)});
   }
   if (path==="/api/orders" && method==="POST") {if(!storageConfigured(env))throw new ApiError(503,"Não foi possível guardar suas fotos agora. Elas continuam neste navegador; tente novamente.");return createOrder(request,env);}
+  if (path==="/api/orders/recover" && method==="GET") {
+    const who=await owner(request,env);
+    await rateLimit(request,env,"recover-order",30,900);
+    // A missing browser reference must never be guessed from email or payment status.
+    // Return a single checkout only when unambiguous; otherwise the owner chooses.
+    const rows=await env.DB.prepare("SELECT * FROM orders WHERE owner_hash=? AND upload_state='ready' AND checkout_reference IS NOT NULL ORDER BY created_at DESC,id DESC LIMIT 11").bind(who).all<OrderRow>();
+    return json({order:rows.results.length===1?visibleOrder(rows.results[0]):null,orders:rows.results.length>1?rows.results.slice(0,10).map(visibleOrder):[]});
+  }
   const customer=path.match(/^\/api\/orders\/([a-f0-9-]{36})(?:\/(checkout|test-payment|reconcile|photos\/(self|loved)))?$/);
   if (customer) {
     const [,id,action,which]=customer;

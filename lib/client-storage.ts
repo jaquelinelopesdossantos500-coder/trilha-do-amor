@@ -11,3 +11,10 @@ export const storage = {
   set(key:string,value:string){try{localStorage.setItem(key,value);}catch{/* Session cookies still protect the current order. */}},
   remove(key:string){try{localStorage.removeItem(key);}catch{/* Storage may be disabled by the browser. */}},
 };
+
+// This marker belongs to one tab, so a checkout in another tab cannot replace it.
+export const tabStorage = {
+  get(key:string){try{return window.sessionStorage.getItem(key);}catch{return null;}},
+  set(key:string,value:string){try{window.sessionStorage.setItem(key,value);}catch{/* The authenticated recovery endpoint remains available. */}},
+  remove(key:string){try{window.sessionStorage.removeItem(key);}catch{/* Browser storage may be disabled. */}},
+};

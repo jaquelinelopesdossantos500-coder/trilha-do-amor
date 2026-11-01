@@ -122,3 +122,19 @@ test('corpo inválido e payload acima do limite são rejeitados antes de persist
  const headers={Authorization:'Bearer '+testSecret};assert.equal((await call('/api/webhooks/pulsefy',{method:'POST',webhook:true,headers,raw:'{invalid'})).response.status,400);
  assert.equal((await notify({event:'pedido_pago',payload:{large:'x'.repeat(65536)},timestamp:'2026-10-31T12:00:00Z'})).response.status,413);
 });
+
+test('recuperação exige sessão, mantém cenário/fotos e não mistura pedidos de clientes diferentes',async()=>{
+ const o=await prepared(),unrelated=await prepared();
+ assert.equal((await call('/api/orders/recover')).response.status,401);
+ const recovered=await call('/api/orders/recover',{cookie:o.cookie});assert.equal(recovered.response.status,200);assert.equal(recovered.data.order.id,o.order.id);assert.equal(recovered.data.order.number,o.order.number);assert.equal(recovered.data.order.scenario,'carinho');assert.equal(recovered.data.order.photosAvailable,true);assert.deepEqual(recovered.data.orders,[]);assert.equal(JSON.stringify(recovered.data).includes(unrelated.order.id),false);assert.equal(JSON.stringify(recovered.data).includes('self_key'),false);assert.equal(recovered.response.headers.get('cache-control'),'no-store');
+ const empty=await call('/api/orders/recover',{cookie:await session()});assert.equal(empty.data.order,null);assert.deepEqual(empty.data.orders,[]);
+});
+test('recuperação de vários checkouts da mesma sessão não escolhe um pedido pelo status de pagamento',async()=>{
+ const o=await prepared(),other=await create();const who=(await env.DB.prepare('SELECT owner_hash FROM orders WHERE id=?').bind(o.order.id).first()).owner_hash;
+ await env.DB.prepare('UPDATE orders SET owner_hash=? WHERE id=?').bind(who,other.order.id).run();other.cookie=o.cookie;await checkout(other);await notify(payload(o));
+ const recovered=await call('/api/orders/recover',{cookie:o.cookie});assert.equal(recovered.data.order,null);assert.deepEqual(recovered.data.orders.map(x=>x.id).sort(),[o.order.id,other.order.id].sort());
+});
+test('chave repetida com outro cenário não reaproveita silenciosamente o pedido anterior',async()=>{
+ const o=await create(),saved=await row(o),form=new FormData();form.set('scenario','luz');form.set('requestKey',saved.request_key);form.set('policyVersion','2026-10-30-v1');form.set('consent','true');
+ const response=await call('/api/orders',{method:'POST',form,cookie:o.cookie});assert.equal(response.response.status,409);assert.equal((await row(o)).scenario,'carinho');
+});

@@ -29,7 +29,7 @@ const waitFor=async(predicate)=>{for(let i=0;i<100;i++){await act(async()=>{awai
 
 beforeEach(()=>{
  imageFailure=false;reduced=false;
- globalThis.indexedDB=new IDBFactory();browser.localStorage.clear();
+ globalThis.indexedDB=new IDBFactory();browser.localStorage.clear();browser.sessionStorage.clear();
  browser.matchMedia=()=>({matches:reduced,addEventListener(){},removeEventListener(){}});
  globalThis.Image=class {onload=null;onerror=null;set src(value){this.value=value;queueMicrotask(()=>imageFailure?this.onerror?.():this.onload?.());}};
  container=document.createElement("div");document.body.append(container);root=createRoot(container);
@@ -286,7 +286,7 @@ test('criar minha homenagem redireciona para o checkout Kirvano sem repetir uplo
   };
   await act(async()=>root.render(React.createElement(Funnel)));await waitFor(()=>container.querySelector('.checkout-action button'));
   await click(container.querySelector('.checkout-action button'));
-  assert.equal(destination,checkoutUrl);assert.equal(checkoutCalls,1);assert.equal(uploads,0);assert.equal(browser.localStorage.getItem('tda_order_id'),orderId);
+  assert.equal(destination,checkoutUrl);assert.equal(checkoutCalls,1);assert.equal(uploads,0);assert.equal(browser.localStorage.getItem('tda_order_id'),orderId);assert.equal(browser.sessionStorage.getItem('tda_checkout_order_id'),orderId);
  }finally{globalThis.location=originalLocation;}
 });
 
@@ -294,6 +294,7 @@ test('obrigado sem sessão de pedido oferece WhatsApp sem inventar aprovação',
  globalThis.fetch=async path=>{
   if(path==='/api/config')return Response.json({...config,mode:'kirvano',testEnvironment:false,sessionReady:true,whatsapp:'5553991905194'});
   if(path==='/api/session')return Response.json({ok:true});
+  if(path==='/api/orders/recover')return Response.json({order:null,orders:[]});
   throw new Error('Unexpected endpoint: '+path);
  };
  await act(async()=>root.render(React.createElement(Funnel,{initialReturn:true})));await waitFor(()=>container.querySelector('.material-whatsapp'));
@@ -428,4 +429,59 @@ test('a oferta usa o cenário real do pedido no banner ilustrativo dos quatro ce
   assert.match(container.querySelector('.checkout-action button').textContent,/CRIAR MINHA HOMENAGEM/);
   assert.match(container.textContent,/Produção manual com IA após o pagamento/);
  }
+});
+
+test('trocar cenário antes de enviar preserva a nova escolha, fotos e nova chave ao recarregar',async()=>{
+ await saveDraft(new File(['foto-a'],'a.jpg',{type:'image/jpeg'}),new File(['foto-b'],'b.jpg',{type:'image/jpeg'}),{scenario:'carinho',requestKey,stage:'photos'});
+ globalThis.fetch=async path=>{if(path==='/api/config')return Response.json(config);if(path==='/api/session')return Response.json({ok:true});throw new Error('Unexpected '+path);};
+ await act(async()=>root.render(React.createElement(Funnel)));await waitFor(()=>container.querySelector('.photo-grid'));
+ await click(container.querySelector('.back-button'));await click(container.querySelector('[aria-label="O abraço na luz, selecionar e reproduzir prévia"]'));
+ await waitFor(async()=> (await loadDraft())?.context.scenario==='luz');const draft=await loadDraft();assert.notEqual(draft.context.requestKey,requestKey);assert.equal(await draft.self.text(),'foto-a');assert.equal(await draft.loved.text(),'foto-b');
+ await act(async()=>root.unmount());root=createRoot(container);await act(async()=>root.render(React.createElement(Funnel)));await waitFor(()=>container.querySelector('.selected-summary'));
+ assert.match(container.querySelector('.selected-summary').textContent,/O abraço na luz/);
+});
+test('trocar uma foto após uma tentativa usa outra chave e não reaproveita as fotos anteriores',async(t)=>{
+ await saveDraft(new File(['anterior-a'],'a.jpg',{type:'image/jpeg'}),new File(['anterior-b'],'b.jpg',{type:'image/jpeg'}),{scenario:'carinho',requestKey,stage:'photos'});
+ globalThis.fetch=async path=>{if(path==='/api/config')return Response.json(config);if(path==='/api/session')return Response.json({ok:true});throw new Error('Unexpected '+path);};
+ const originalBitmap=globalThis.createImageBitmap;globalThis.createImageBitmap=async()=>({width:256,height:256,close(){}});
+ t.mock.method(browser.HTMLCanvasElement.prototype,'getContext',()=>({fillRect(){},drawImage(){}}));t.mock.method(browser.HTMLCanvasElement.prototype,'toBlob',callback=>callback(new Blob(['nova-foto'],{type:'image/jpeg'})));
+ try{await act(async()=>root.render(React.createElement(Funnel)));await waitFor(()=>container.querySelector('#photo-self'));
+  const input=container.querySelector('#photo-self');Object.defineProperty(input,'files',{value:[new File(['nova-foto'],'new.jpg',{type:'image/jpeg'})]});await act(async()=>input.dispatchEvent(new browser.Event('change',{bubbles:true})));
+  await waitFor(async()=> (await loadDraft())?.context.requestKey!==requestKey);const draft=await loadDraft();assert.notEqual(draft.context.requestKey,requestKey);assert.equal(await draft.self.text(),'nova-foto');assert.equal(await draft.loved.text(),'anterior-b');
+ }finally{globalThis.createImageBitmap=originalBitmap;}
+});
+test('retorno espera recuperar o pedido antes de liberar WhatsApp com o ID',async()=>{
+ browser.localStorage.setItem('tda_order_id',orderId);const lookup=pending();let checked=false;
+ globalThis.fetch=async path=>{if(path==='/api/config')return Response.json({...config,sessionReady:true,whatsapp:'5553991905194'});if(path==='/api/session')return Response.json({ok:true});if(path==='/api/orders/'+orderId){checked=true;return lookup.promise;}throw new Error('Unexpected '+path);};
+ await act(async()=>root.render(React.createElement(Funnel,{initialReturn:true})));await waitFor(()=>checked);assert.equal(container.querySelector('a[href^="https://wa.me/"]'),null);assert.match(container.textContent,/Recuperando seu pedido/);
+ await act(async()=>lookup.resolve(Response.json({order})));await waitFor(()=>container.querySelector('.material-whatsapp'));assert.match(new URL(container.querySelector('.material-whatsapp').href).searchParams.get('text'),/TA-TESTE/);
+});
+test('retorno com armazenamento local ausente recupera o único pedido pela sessão sem upload',async()=>{
+ let uploads=0,recoveries=0;
+ globalThis.fetch=async path=>{if(path==='/api/config')return Response.json({...config,sessionReady:true,whatsapp:'5553991905194'});if(path==='/api/session')return Response.json({ok:true});if(path==='/api/orders/recover'){recoveries++;return Response.json({order,orders:[]});}if(path==='/api/orders'){uploads++;throw new Error('Duplicate upload');}throw new Error('Unexpected '+path);};
+ await act(async()=>root.render(React.createElement(Funnel,{initialReturn:true})));await waitFor(()=>container.querySelector('.material-whatsapp'));assert.equal(recoveries,1);assert.equal(uploads,0);assert.match(new URL(container.querySelector('.material-whatsapp').href).searchParams.get('text'),/TA-TESTE/);assert.equal(browser.sessionStorage.getItem('tda_checkout_order_id'),orderId);
+});
+test('checkout de outra aba não substitui o ID desta compra no WhatsApp',async()=>{
+ browser.sessionStorage.setItem('tda_checkout_order_id',orderId);browser.localStorage.setItem('tda_order_id','aaaaaaaa-aaaa-4aaa-aaaa-aaaaaaaaaaaa');const paths=[];
+ globalThis.fetch=async path=>{paths.push(path);if(path==='/api/config')return Response.json({...config,sessionReady:true,whatsapp:'5553991905194'});if(path==='/api/session')return Response.json({ok:true});if(path==='/api/orders/'+orderId)return Response.json({order});throw new Error('Wrong order '+path);};
+ await act(async()=>root.render(React.createElement(Funnel,{initialReturn:true})));await waitFor(()=>container.querySelector('.material-whatsapp'));assert.equal(paths.includes('/api/orders/aaaaaaaa-aaaa-4aaa-aaaa-aaaaaaaaaaaa'),false);assert.match(new URL(container.querySelector('.material-whatsapp').href).searchParams.get('text'),/TA-TESTE/);
+});
+test('mais de um pedido recuperável exige escolha explícita e nunca adivinha o ID',async()=>{
+ const other={...order,id:'aaaaaaaa-aaaa-4aaa-aaaa-aaaaaaaaaaaa',number:'TDA-OUTRO',scenario:'luz'};
+ globalThis.fetch=async path=>{if(path==='/api/config')return Response.json({...config,sessionReady:true,whatsapp:'5553991905194'});if(path==='/api/session')return Response.json({ok:true});if(path==='/api/orders/recover')return Response.json({order:null,orders:[order,other]});throw new Error('Unexpected '+path);};
+ await act(async()=>root.render(React.createElement(Funnel,{initialReturn:true})));await waitFor(()=>container.querySelector('.recovery-orders'));assert.equal(container.querySelector('a[href^="https://wa.me/"]'),null);
+ await click([...container.querySelectorAll('.recovery-orders button')].find(b=>b.textContent.includes('TDA-OUTRO')));await waitFor(()=>container.querySelector('.material-whatsapp'));assert.match(new URL(container.querySelector('.material-whatsapp').href).searchParams.get('text'),/TDA-OUTRO/);assert.doesNotMatch(new URL(container.querySelector('.material-whatsapp').href).searchParams.get('text'),/TA-TESTE/);
+});
+test('falha na recuperação não libera atendimento com ID ausente ou de outro pedido',async()=>{
+ browser.localStorage.setItem('tda_order_id',orderId);
+ globalThis.fetch=async path=>{if(path==='/api/config')return Response.json({...config,sessionReady:true,whatsapp:'5553991905194'});if(path==='/api/session')return Response.json({ok:true});throw new Error('Network failure');};
+ await act(async()=>root.render(React.createElement(Funnel,{initialReturn:true})));await waitFor(()=>container.querySelector('[role="alert"]'));assert.equal(container.querySelector('a[href^="https://wa.me/"]'),null);assert.match(container.textContent,/referência correta/);
+});
+
+test('referência explícita no retorno tem prioridade sobre outra compra aberta na mesma aba',async()=>{
+ browser.sessionStorage.setItem('tda_checkout_order_id','aaaaaaaa-aaaa-4aaa-aaaa-aaaaaaaaaaaa');let recovered=false;
+ const previousLocation=globalThis.location;globalThis.location={search:'?pedido='+orderId};
+ try{globalThis.fetch=async path=>{if(path==='/api/config')return Response.json({...config,sessionReady:true,whatsapp:'5553991905194'});if(path==='/api/session')return Response.json({ok:true});if(path==='/api/orders/'+orderId)return Response.json({order});if(path==='/api/orders/recover'){recovered=true;throw new Error('Wrong fallback');}throw new Error('Wrong order '+path);};
+  await act(async()=>root.render(React.createElement(Funnel,{initialReturn:true})));await waitFor(()=>container.querySelector('.material-whatsapp'));assert.equal(recovered,false);assert.match(new URL(container.querySelector('.material-whatsapp').href).searchParams.get('text'),/TA-TESTE/);
+ }finally{globalThis.location=previousLocation;}
 });

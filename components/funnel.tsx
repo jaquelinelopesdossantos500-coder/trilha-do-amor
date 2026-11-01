@@ -5,7 +5,7 @@ import { orderWhatsappUrl } from "../lib/whatsapp";
 import { SCENARIOS, PRICE_CENTS, POLICY_VERSION, type publicConfig } from "../lib/configuration";
 import type { PublicOrder } from "../lib/order-types";
 import { preparePhoto, loadDraft, saveDraft, clearDraft } from "../lib/client-media";
-import { clientUUID,storage } from "../lib/client-storage";
+import { clientUUID,storage,tabStorage } from "../lib/client-storage";
 import ReunionPreparation from "./reunion-preparation";
 import LockedMemorialPreview from "./locked-memorial-preview";
 import { preloadPreparationImages } from "../lib/preparation-media";
@@ -35,12 +35,15 @@ export default function Funnel({initialReturn=false}:{initialReturn?:boolean}={}
   const [error,setError]=useState(""),[notice,setNotice]=useState(""),[busy,setBusy]=useState(false),[photoBusy,setPhotoBusy]=useState<string|null>(null);
   const [preparationStartedAt,setPreparationStartedAt]=useState(0);
   const [confirmDeletion,setConfirmDeletion]=useState(false);
+  const [recoveringOrder,setRecoveringOrder]=useState(initialReturn),[recoveryFailed,setRecoveryFailed]=useState(false);
+  const [recoveryOrders,setRecoveryOrders]=useState<PublicOrder[]>([]);
   const preparationWork=useRef<Promise<void>|null>(null),orderRef=useRef<PublicOrder|null>(null),restoredOrderId=useRef<string|null>(null);
   const preparationController=useRef<AbortController|null>(null);
   const requestKey=useRef(""),videos=useRef<Record<string,HTMLVideoElement|null>>({}),started=useRef(false),heading=useRef<HTMLHeadingElement>(null);
   const selfUrl=usePhotoUrl(self),lovedUrl=usePhotoUrl(loved),scene=SCENARIOS.find(s=>s.id===(order?.scenario||selected));
   function rememberOrder(o:PublicOrder){orderRef.current=o;restoredOrderId.current=o.id;setOrder(o);storage.set("tda_order_id",o.id);}
   function orderStep(o:PublicOrder):Step{return o.paymentStatus==="approved"?"success":["refunded","cancelled"].includes(o.paymentStatus)?"success":"checkout";}
+  function recoverOrder(o:PublicOrder){rememberOrder(o);setSelected(o.scenario);setRecoveryOrders([]);setRecoveryFailed(false);tabStorage.set("tda_checkout_order_id",o.id);setStep(["pending","rejected"].includes(o.paymentStatus)?"pending":orderStep(o));}
   useEffect(()=>{
     if(started.current)return;started.current=true;
     requestKey.current=storage.get("tda_request_key")||clientUUID();storage.set("tda_request_key",requestKey.current);
@@ -50,17 +53,22 @@ export default function Funnel({initialReturn=false}:{initialReturn?:boolean}={}
         const draft=await loadDraft().catch(()=>null),context=draft?.context;
         if(draft){setSelf(draft.self);setLoved(draft.loved);}
         if(context&&SCENARIOS.some(s=>s.id===context.scenario)){setSelected(context.scenario);requestKey.current=context.requestKey;storage.set("tda_request_key",context.requestKey);storage.set("tda_scene",context.scenario);}
-        restoredOrderId.current=new URLSearchParams(location.search).get("pedido")||context?.orderId||storage.get("tda_order_id");
+        const explicitId=new URLSearchParams(location.search).get("pedido");
+        restoredOrderId.current=explicitId||(initialReturn?tabStorage.get("tda_checkout_order_id"):null)||context?.orderId||storage.get("tda_order_id");
         if(!initialReturn&&context?.stage==="preparing"&&((draft?.self&&draft.loved)||restoredOrderId.current)){
           setPreparationStartedAt(Number.isFinite(context.startedAt)?context.startedAt!:Date.now());setStep("preparing");return;
         }
         if(!initialReturn&&draft?.self&&draft.loved&&!restoredOrderId.current)setStep(context?.stage==="checkout"?"checkout":"photos");
         const cfg=await api<Config>("/api/config");setConfig(cfg);if(cfg.sessionReady??cfg.storageReady)await api("/api/session",post({}));
+        if(initialReturn&&!(cfg.sessionReady??cfg.storageReady))throw new Error("Não foi possível recuperar seu pedido agora. Tente consultar novamente.");
+        const recover=async()=>{const data=await api<{order:PublicOrder|null;orders:PublicOrder[]}>("/api/orders/recover");if(data.order)recoverOrder(data.order);else setRecoveryOrders(data.orders||[]);};
         const id=(cfg.sessionReady??cfg.storageReady)?restoredOrderId.current:null;
         if(id){try{const {order:o}=await api("/api/orders/"+encodeURIComponent(id));rememberOrder(o);setSelected(o.scenario);
           setStep((initialReturn||new URLSearchParams(location.search).has("retorno"))&&["pending","rejected"].includes(o.paymentStatus)?"pending":orderStep(o));
-        }catch(e){if((e as {status:number}).status===404){storage.remove("tda_order_id");restoredOrderId.current=null;}else throw e;}}
-      }catch(e){setError((e as Error).message);}
+        }catch(e){if((e as {status:number}).status===404){storage.remove("tda_order_id");restoredOrderId.current=null;if(initialReturn){if(explicitId)throw e;await recover();}}else throw e;}}
+        else if(initialReturn)await recover();
+      }catch(e){setError((e as Error).message);if(initialReturn)setRecoveryFailed(true);}
+      finally{setRecoveringOrder(false);}
     })();
     const pause=()=>{if(document.hidden){Object.values(videos.current).forEach(v=>v?.pause());setPlaying(null);}};
     document.addEventListener("visibilitychange",pause);return()=>document.removeEventListener("visibilitychange",pause);
@@ -74,18 +82,22 @@ export default function Funnel({initialReturn=false}:{initialReturn?:boolean}={}
     return()=>clearInterval(timer);
   },[order?.id,step]);
   function go(next:Step){Object.values(videos.current).forEach(v=>v?.pause());setPlaying(null);setStep(next);}
+  function newUploadIntent(){preparationWork.current=null;requestKey.current=clientUUID();restoredOrderId.current=null;storage.set("tda_request_key",requestKey.current);storage.remove("tda_order_id");}
   async function select(id:string){
-    if(id!==selected)preparationWork.current=null;
+    const changed=id!==selected&&!orderRef.current;
+    if(changed)newUploadIntent();
     setSelected(id);storage.set("tda_scene",id);setError("");Object.entries(videos.current).forEach(([k,v])=>{if(k!==id)v?.pause();});
-    const video=videos.current[id];if(!video)return;
+    const saving=changed?saveDraft(self,loved,{scenario:id,requestKey:requestKey.current,stage:"photos"}).catch(()=>{setNotice("Mantenha esta aba aberta para preservar sua escolha até o envio.");}):Promise.resolve();
+    const video=videos.current[id];if(!video){await saving;return;}
     if(!video.getAttribute("src"))video.src=`/media/${id}.mp4`;
     video.currentTime=0;video.muted=true;setPlaying(id);
     try{await video.play();}catch{setPlaying(null);setNotice("Cenário selecionado. Você já pode continuar.");}
+    await saving;
   }
   async function photo(event:ChangeEvent<HTMLInputElement>,which:"self"|"loved"){
     const file=event.target.files?.[0];event.target.value="";if(!file)return;setPhotoBusy(which);setError("");
     try{const ready=await preparePhoto(file),a=which==="self"?ready:self,b=which==="loved"?ready:loved;
-      preparationWork.current=null;if(which==="self")setSelf(ready);else setLoved(ready);await saveDraft(a,b,{scenario:selected,requestKey:requestKey.current,stage:"photos"}).catch(()=>{setNotice("Mantenha esta aba aberta para preservar suas fotos até o envio.");});
+      newUploadIntent();if(which==="self")setSelf(ready);else setLoved(ready);await saveDraft(a,b,{scenario:selected,requestKey:requestKey.current,stage:"photos"}).catch(()=>{setNotice("Mantenha esta aba aberta para preservar suas fotos até o envio.");});
     }catch(e){setError((e as Error).message);}finally{setPhotoBusy(null);}
   }
   function prepareCheckout(){
@@ -134,7 +146,7 @@ export default function Funnel({initialReturn=false}:{initialReturn?:boolean}={}
     try{const cfg=await api<Config>("/api/config");setConfig(cfg);
       if(!cfg.storageReady)throw new Error("Não foi possível enviar suas fotos agora. Elas continuam neste navegador; tente novamente em instantes.");
       const current=order||await registerOrder();
-      const data=await api(`/api/orders/${current.id}/checkout`,post({}));if(data.approved){rememberOrder(data.order);go("success");}else if(data.simulation){rememberOrder(data.order);go("test");}else if(data.url){location.assign(data.url);}else throw new Error("Não foi possível iniciar o pagamento. Tente novamente em instantes.");}
+      const data=await api(`/api/orders/${current.id}/checkout`,post({}));if(data.approved){rememberOrder(data.order);go("success");}else if(data.simulation){rememberOrder(data.order);go("test");}else if(data.url){tabStorage.set("tda_checkout_order_id",current.id);location.assign(data.url);}else throw new Error("Não foi possível iniciar o pagamento. Tente novamente em instantes.");}
     catch(e){setError((e as Error).message);}finally{setBusy(false);}
   }
   async function simulate(status:string){if(!order)return;setBusy(true);setError("");try{const {order:o}=await api(`/api/orders/${order.id}/test-payment`,post({status}));rememberOrder(o);go(status==="approved"?"success":"pending");}catch(e){setError((e as Error).message);}finally{setBusy(false);}}
@@ -144,9 +156,9 @@ export default function Funnel({initialReturn=false}:{initialReturn?:boolean}={}
     try{const {order:o}=await api(`/api/orders/${order.id}/photos`,{method:"DELETE"});rememberOrder(o);setSelf(null);setLoved(null);await clearDraft().catch(()=>{});setConfirmDeletion(false);setNotice("As duas fotografias foram excluídas. O registro do pedido foi preservado.");}
     catch(e){setError((e as Error).message);}finally{setBusy(false);}
   }
-  function restart(){storage.remove("tda_order_id");storage.remove("tda_scene");storage.remove("tda_request_key");requestKey.current=clientUUID();storage.set("tda_request_key",requestKey.current);history.replaceState(null,"","/");preparationWork.current=null;orderRef.current=null;restoredOrderId.current=null;setOrder(null);setSelected("");setSelf(null);setLoved(null);clearDraft().catch(()=>{});go("scenes");}
+  function restart(){storage.remove("tda_order_id");storage.remove("tda_scene");storage.remove("tda_request_key");tabStorage.remove("tda_checkout_order_id");requestKey.current=clientUUID();storage.set("tda_request_key",requestKey.current);history.replaceState(null,"","/");preparationWork.current=null;orderRef.current=null;restoredOrderId.current=null;setOrder(null);setSelected("");setSelf(null);setLoved(null);setRecoveryOrders([]);setRecoveryFailed(false);clearDraft().catch(()=>{});go("scenes");}
   const currentIndex=step==="scenes"?1:step==="photos"?2:step==="preparing"?3:4;
-  const whatsapp=orderWhatsappUrl(config?.whatsapp,order?.number);
+  const whatsapp=!recoveringOrder&&!recoveryFailed&&!recoveryOrders.length?orderWhatsappUrl(config?.whatsapp,order?.number):null;
   const showWhatsapp=!!whatsapp&&["pending","success"].includes(step);
 
   return <div className={`site-frame${step==="preparing"?" is-preparing":""}${showWhatsapp?" has-whatsapp":""}`}>
@@ -192,10 +204,11 @@ export default function Funnel({initialReturn=false}:{initialReturn?:boolean}={}
         <div className="success-emblem"><Icon name="heart"/></div>
         <span className="eyebrow">TRILHA DO AMOR</span>
         <h1 ref={heading} tabIndex={-1}>Obrigado pela<br/>confiança! <span className="gold">💛</span></h1>
-        <p>Concluiu sua compra? Fale com a gente para conferir o pagamento e combinar o recebimento da sua homenagem.</p>
+        <p>{recoveringOrder?"Recuperando seu pedido para vincular corretamente o atendimento…":recoveryFailed?"Não foi possível recuperar seu pedido agora. Consulte novamente para continuar com a referência correta.":recoveryOrders.length?"Há mais de um pedido neste navegador. Selecione o pedido desta compra para falar com o atendimento.":"Concluiu sua compra? Fale com a gente para conferir o pagamento e combinar o recebimento da sua homenagem."}</p>
+        {!!recoveryOrders.length&&<div className="recovery-orders">{recoveryOrders.map(o=><button key={o.id} className="secondary" onClick={()=>recoverOrder(o)}><span>{o.number}<br/>{SCENARIOS.find(s=>s.id===o.scenario)?.name} · {date(o.createdAt)}</span><Icon name="arrow"/></button>)}</div>}
         {whatsapp&&<a className="primary material-whatsapp" href={whatsapp} target="_blank" rel="noreferrer"><Icon name="whatsapp"/> RECEBA SEU MATERIAL NO WHATSAPP</a>}
         <p className="subtle">Para consultar seu pedido aqui, use o mesmo navegador em que enviou as fotos. A produção começa após a confirmação do pagamento.</p>
-        <button className="secondary" onClick={()=>location.reload()}>CONSULTAR MEU PEDIDO <Icon name="refresh"/></button>
+        <button className="secondary" disabled={recoveringOrder} onClick={()=>location.reload()}>{recoveringOrder?"RECUPERANDO PEDIDO…":"CONSULTAR MEU PEDIDO"} <Icon name="refresh"/></button>
         <a href="/" className="text-link">Voltar ao início</a>
       </section>}
       {step==="pending"&&order&&<section className="status-page">
