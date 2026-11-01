@@ -10,6 +10,7 @@ import { createPreference, validWebhook, mercadoFetch, applyProviderPayment, rec
 import { createKirvanoCheckout, kirvanoWebhook } from "./kirvano";
 import { createHostedCheckout } from "./hosted-checkout";
 import { pulsefyWebhook } from "./pulsefy";
+import { resendWebhook, type BackgroundContext } from "./email-delivery";
 
 const json = (data: unknown, status = 200, headers?: HeadersInit) => Response.json(data, { status, headers });
 const contacts = z.object({ name: z.string().trim().min(2).max(100), email: z.string().trim().email().max(200), whatsapp: z.string().transform(s=>s.replace(/\D/g,"")).refine(s=>/^(55)?[1-9]\d{9,10}$/.test(s)) });
@@ -121,12 +122,13 @@ async function photoResponse(request: Request,env: AppEnv,o: OrderRow,which: str
   return new Response(object.body,{headers:{"Content-Type":type||"application/octet-stream","Content-Disposition":"inline","Cache-Control":"private, no-store"}});
 }
 
-async function route(request: Request,env: AppEnv): Promise<Response> {
+async function route(request: Request,env: AppEnv,context?: BackgroundContext): Promise<Response> {
   const url=new URL(request.url), path=url.pathname.replace(/\/$/,""), method=request.method;
   if (path==="/api/config" && method==="GET") return json(publicConfig(request,env));
   if (!env.DB) throw new ApiError(503,"Não foi possível acessar o pedido agora. Tente novamente.");
   if(path==="/api/webhooks/kirvano"&&method==="POST")return json(await kirvanoWebhook(request,env));
-  if(path==="/api/webhooks/pulsefy"&&method==="POST")return json(await pulsefyWebhook(request,env));
+  if(path==="/api/webhooks/pulsefy"&&method==="POST")return json(await pulsefyWebhook(request,env,context));
+  if(path==="/api/webhooks/resend"&&method==="POST")return json(await resendWebhook(request,env));
   const webhook=path==="/api/webhooks/mercadopago";
   if (!["GET","HEAD"].includes(method) && !webhook) assertOrigin(request);
   if (path==="/api/session" && method==="POST") {
@@ -244,8 +246,8 @@ export async function maintenance(env: AppEnv) {
   ]);
   return {deleted,cleanupChecks};
 }
-export async function handleApi(request: Request,env: AppEnv) {
-  try { return secureResponse(await route(request,env)); }
+export async function handleApi(request: Request,env: AppEnv,context?: BackgroundContext) {
+  try { return secureResponse(await route(request,env,context)); }
   catch (e) {
     if (e instanceof ApiError) return secureResponse(json({error:e.message},e.status));
     // Deliberately omit raw exceptions, bodies and photos from server logs.

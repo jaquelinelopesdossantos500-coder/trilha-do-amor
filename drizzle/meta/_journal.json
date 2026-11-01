@@ -43,6 +43,13 @@
       "when": 1793490527751,
       "tag": "0005_pulsefy_payment_details",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "6",
+      "when": 1793506009905,
+      "tag": "0006_order_confirmation_email",
+      "breakpoints": true
     }
   ]
 }

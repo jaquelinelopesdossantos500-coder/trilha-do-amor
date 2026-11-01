@@ -33,7 +33,8 @@
   "r2_buckets": [],
   "triggers": {
     "crons": [
-      "0 * * * *"
+      "0 * * * *",
+      "*/5 * * * *"
     ]
   },
   "vars": {
@@ -49,7 +50,9 @@
     "KIRVANO_CHECKOUT_URL": "https://pulsefy.shop/c/o8gsg5c",
     "PHOTO_STORAGE_PROVIDER": "supabase",
     "SUPABASE_STORAGE_URL": "https://yllbzrbyjaaksdsqcmiq.supabase.co/functions/v1/tda-photo-storage",
-    "PULSEFY_CHECKOUT_URL": "https://pulsefy.shop/c/o8gsg5c"
+    "PULSEFY_CHECKOUT_URL": "https://pulsefy.shop/c/o8gsg5c",
+    "EMAIL_CONFIRMATIONS_ENABLED": "true",
+    "RESEND_FROM": "Trilha do Amor <pedidos@notificacoes.trilhadoamor.site>"
   },
   "observability": {
     "enabled": true,

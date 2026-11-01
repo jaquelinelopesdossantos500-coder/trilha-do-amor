@@ -1,10 +1,12 @@
 import { timingSafeEqual } from "node:crypto";
+import { validEmail } from "./order-email";
 import { z } from "zod";
 import { PRICE_CENTS, addBusinessDays, boundedInt, type AppEnv } from "./configuration";
 import { isPulsefyCheckout } from "./hosted-checkout";
 import { ApiError, hash, readJSON } from "./security";
 import { audit, getOrder } from "./repository";
 import type { OrderRow } from "./order-types";
+import { confirmationEnqueue, resumeConfirmation, startConfirmationDelivery, type BackgroundContext } from "./email-delivery";
 
 // Getfy's outbound webhook contract, used by Pulsefy. Pinned primary sources: docs/PULSEFY.md.
 const identifier=z.union([z.string().regex(/^[A-Za-z0-9_-]{1,100}$/),z.number().int().positive().max(Number.MAX_SAFE_INTEGER)]).transform(String);
@@ -40,7 +42,7 @@ async function authenticate(request:Request,env:AppEnv) {
   if(!timingSafeEqual(new TextEncoder().encode(expected),new TextEncoder().encode(received)))throw new ApiError(401,"Notificação não autenticada.");
 }
 
-export async function pulsefyWebhook(request:Request,env:AppEnv) {
+export async function pulsefyWebhook(request:Request,env:AppEnv,context?:BackgroundContext) {
   await authenticate(request,env);
   const body=await readJSON(request,65536),envelope=envelopeSchema.safeParse(body);
   if(!envelope.success)throw new ApiError(422,"Formato de notificação Pulsefy inválido.");
@@ -68,7 +70,10 @@ export async function pulsefyWebhook(request:Request,env:AppEnv) {
   await env.DB!.prepare("INSERT INTO payment_events (id,provider,event_type,transaction_id,order_id,event_time,received_at,outcome,body_hash) VALUES (?,'pulsefy',?,?,?,?,?,'received',?) ON CONFLICT(id) DO NOTHING")
     .bind(eventId,event,p.order.id,found?.id||null,timestamp,receivedAt,await hash(JSON.stringify(body))).run();
   const receipt=await env.DB!.prepare("SELECT outcome FROM payment_events WHERE id=?").bind(eventId).first<{outcome:string}>();
-  if(receipt?.outcome!=="received")return {received:true,duplicate:true};
+  if(receipt?.outcome!=="received"){
+    if(approved && found?.payment_status==="approved" && found.payment_id===p.order.id) await resumeConfirmation(env,found.id,p.order.id,p.customer?.email,context);
+    return {received:true,duplicate:true};
+  }
   async function complete(outcome:string,orderId:string|null) {
     await env.DB!.batch([
       env.DB!.prepare("INSERT INTO events (id,order_id,kind,detail,created_at) VALUES (?,?,?,NULL,?) ON CONFLICT(id) DO NOTHING").bind("pulsefy-"+eventId,orderId,"pulsefy_"+event+"_"+outcome,receivedAt),
@@ -87,11 +92,14 @@ export async function pulsefyWebhook(request:Request,env:AppEnv) {
     if(o.payment_id&&o.payment_id!==p.order.id&&(o.paid_at||["approved","refunded"].includes(o.payment_status)))return complete("other_sale_review",o.id);
     if(o.payment_status==="refunded")return complete("terminal_preserved",o.id);
     if(o.payment_id===p.order.id&&o.payment_total_cents!==null&&o.payment_total_cents!==total)return complete("financial_conflict",o.id);
-    if(o.payment_status===status&&o.payment_id===p.order.id)return complete("duplicate_state",o.id);
-    const email=p.customer?.email&&/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(p.customer.email)?p.customer.email:null;
+    if(o.payment_status===status&&o.payment_id===p.order.id){
+      if(approved)await resumeConfirmation(env,o.id,p.order.id,p.customer?.email,context);
+      return complete("duplicate_state",o.id);
+    }
+    const email=validEmail(p.customer?.email)?p.customer.email:null;
     const phone=p.customer?.phone?.replace(/\D/g,"");
     const production=approved&&["awaiting_payment","cancelled"].includes(o.production_status)?"awaiting_production":!approved&&o.production_status!=="delivered"?"cancelled":o.production_status;
-    const result=await env.DB!.prepare(`UPDATE orders SET payment_provider='pulsefy',payment_id=?,payment_status=?,provider_updated_at=?,
+    const update=env.DB!.prepare(`UPDATE orders SET payment_provider='pulsefy',payment_id=?,payment_status=?,provider_updated_at=?,
       payment_total_cents=?,payment_currency='BRL',payment_details_json=?,
       name=COALESCE(?,name),email=COALESCE(?,email),whatsapp=COALESCE(?,whatsapp),
       paid_at=CASE WHEN ? THEN COALESCE(paid_at,?) ELSE paid_at END,
@@ -99,8 +107,13 @@ export async function pulsefyWebhook(request:Request,env:AppEnv) {
       photos_expires_at=CASE WHEN ? AND paid_at IS NULL AND photos_deleted_at IS NULL THEN ? ELSE photos_expires_at END,
       production_status=?,updated_at=?,revision=revision+1 WHERE id=? AND revision=?`)
       .bind(p.order.id,status,timestamp,total,details,p.customer?.name?.trim()||null,email,phone&&/^\d{10,15}$/.test(phone)?phone:null,
-        Number(approved),receivedAt,Number(approved),addBusinessDays(new Date(receivedAt),o.delivery_days),Number(approved),new Date(Date.now()+boundedInt(env.RETENTION_DAYS,30,1,90)*86400000).toISOString(),production,receivedAt,o.id,o.revision).run();
-    if(result.meta.changes)return complete("applied",o.id);
+        Number(approved),receivedAt,Number(approved),addBusinessDays(new Date(receivedAt),o.delivery_days),Number(approved),new Date(Date.now()+boundedInt(env.RETENTION_DAYS,30,1,90)*86400000).toISOString(),production,receivedAt,o.id,o.revision);
+    const [result]=await env.DB!.batch([update,...(approved?[confirmationEnqueue(env,o.id,receivedAt)]:[env.DB!.prepare("UPDATE email_outbox SET status='cancelled',payload_json=NULL,updated_at=? WHERE order_id=? AND status IN ('pending','retry','awaiting_recipient')").bind(receivedAt,o.id)])]);
+    if(result.meta.changes){
+      const response=await complete("applied",o.id);
+      if(approved)startConfirmationDelivery(env,context,o.id);
+      return response;
+    }
   }
   throw new ApiError(503,"Notificação concorrente. Tente novamente.");
 }

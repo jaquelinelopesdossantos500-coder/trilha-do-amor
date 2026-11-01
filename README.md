@@ -2,11 +2,11 @@
 
 Funil React/Vinext no domínio https://trilhadoamor.site/, hospedado no Worker Cloudflare existente `trilha-do-amor`. Jornada: cenário → duas fotos → carrossel emocional → oferta de R$ 27,90 → Pulsefy → confirmação por webhook → produção e entrega manual pelo WhatsApp.
 
-O site não pede nome, e-mail ou telefone. Esses dados são preenchidos no checkout e vinculados ao pedido pelo webhook autenticado. Não há geração automática de vídeo nem envio automático de mensagens.
+O site não pede nome, e-mail ou telefone. Esses dados são preenchidos no checkout e vinculados ao pedido pelo webhook autenticado. Não há geração automática de vídeo nem envio automático de mensagens no WhatsApp. A confirmação de compra é enviada por e-mail pelo Resend após o pagamento aprovado.
 
 ## Estado da integração
 
-Fotografias no Supabase Storage privado; D1 com migração 0005 para detalhes financeiros e adicionais. O botão da oferta abre `https://pulsefy.shop/c/o8gsg5c`, preservando o pedido e uma referência `src` estável. O receptor `/api/webhooks/pulsefy` aceita o formato Pulsefy/Getfy com Bearer, confirma `pedido_pago` e trata reembolso sem duplicar pedidos. `/obrigado` acompanha o status e oferece recebimento no WhatsApp (53) 99190-5194. Para completar a conexão no provedor, cadastrar webhook/token/eventos e a URL de retorno conforme [PULSEFY.md](docs/PULSEFY.md), executar o teste do painel e acompanhar a primeira confirmação real. Nenhuma compra real foi realizada.
+Fotografias no Supabase Storage privado; D1 com migração 0006 para fila de e-mails e acompanhamento da entrega. O botão da oferta abre `https://pulsefy.shop/c/o8gsg5c`, preservando o pedido e uma referência `src` estável. O receptor `/api/webhooks/pulsefy` aceita o formato Pulsefy/Getfy com Bearer, confirma `pedido_pago` e trata reembolso sem duplicar pedidos. `/obrigado` acompanha o status e oferece recebimento no WhatsApp (53) 99190-5194. Para completar a conexão no provedor, cadastrar webhook/token/eventos e a URL de retorno conforme [PULSEFY.md](docs/PULSEFY.md), executar o teste do painel e acompanhar a primeira confirmação real. Nenhuma compra real foi realizada.
 
 Repositório do projeto: [jaquelinelopesdossantos500-coder/trilha-do-amor](https://github.com/jaquelinelopesdossantos500-coder/trilha-do-amor), público, com os fontes completos na branch `main`. Em 31/10/2026 a reautorização da instalação GitHub restabeleceu a gravação pelo conector; o commit inicial foi `b4183ed6d4701658ece4c72b32bebb74c35200b5`. A publicação do site utiliza a API Cloudflare, sem deploy automático GitHub configurado. Chaves privadas e dados de pedidos não fazem parte do repositório.
 
@@ -51,6 +51,7 @@ Os testes usam D1/armazenamento local Miniflare e payloads fictícios baseados n
 - [Cloudflare e publicação no mesmo Worker](docs/CLOUDFLARE.md)
 - [Configurações e dependências pendentes](docs/CONFIGURACOES.md)
 - [Pulsefy: webhook, token e retorno após pagamento](docs/PULSEFY.md)
+- [Resend: confirmação por e-mail e acompanhamento](docs/RESEND.md)
 - [Kirvano: adaptador legado](docs/KIRVANO.md)
 - [Operação manual: localizar pedido, baixar fotos e produzir](docs/OPERACAO.md)
 - [Validação e limites](docs/VALIDACAO.md)
@@ -66,6 +67,7 @@ Os testes usam D1/armazenamento local Miniflare e payloads fictícios baseados n
 | `lib/backend.ts` | Pedidos, upload, fotos, exclusão e manutenção |
 | `lib/photo-storage.ts`, `supabase/functions/tda-photo-storage/` | Adaptador Supabase e acesso privado assinado |
 | `lib/pulsefy.ts`, `lib/hosted-checkout.ts` | Webhook Pulsefy e checkout hospedado |
+| `lib/email-delivery.ts`, `lib/order-email.ts`, `lib/whatsapp.ts` | Confirmação por e-mail, fila persistida e WhatsApp compartilhado |
 | `lib/kirvano.ts` | Adaptador legado preservado |
 | `lib/payments.ts` | Adaptador legado, não selecionado no modo Pulsefy |
 | `db/schema.ts`, `drizzle/` | Modelo e migrações |

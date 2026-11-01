@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useRef, useState, type ChangeEvent } from "react";
 import { Brand, Icon } from "./brand";
+import { orderWhatsappUrl } from "../lib/whatsapp";
 import { SCENARIOS, PRICE_CENTS, POLICY_VERSION, type publicConfig } from "../lib/configuration";
 import type { PublicOrder } from "../lib/order-types";
 import { preparePhoto, loadDraft, saveDraft, clearDraft } from "../lib/client-media";
@@ -145,7 +146,7 @@ export default function Funnel({initialReturn=false}:{initialReturn?:boolean}={}
   }
   function restart(){storage.remove("tda_order_id");storage.remove("tda_scene");storage.remove("tda_request_key");requestKey.current=clientUUID();storage.set("tda_request_key",requestKey.current);history.replaceState(null,"","/");preparationWork.current=null;orderRef.current=null;restoredOrderId.current=null;setOrder(null);setSelected("");setSelf(null);setLoved(null);clearDraft().catch(()=>{});go("scenes");}
   const currentIndex=step==="scenes"?1:step==="photos"?2:step==="preparing"?3:4;
-  const whatsapp=config?.whatsapp?`https://wa.me/${config.whatsapp}?text=${encodeURIComponent(order?`Olá! 💛 Quero receber o material da minha homenagem do Trilha do Amor pelo WhatsApp.\n\nMeu pedido é: ${order.number}\n\nPode conferir meu pagamento e me orientar sobre a entrega?`:"Olá! 💛 Quero receber o material da minha homenagem do Trilha do Amor pelo WhatsApp. Pode me ajudar a localizar meu pedido e conferir o pagamento?")}`:null;
+  const whatsapp=orderWhatsappUrl(config?.whatsapp,order?.number);
   const showWhatsapp=!!whatsapp&&["pending","success"].includes(step);
 
   return <div className={`site-frame${step==="preparing"?" is-preparing":""}${showWhatsapp?" has-whatsapp":""}`}>

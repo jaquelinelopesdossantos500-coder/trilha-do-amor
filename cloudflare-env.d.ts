@@ -10,6 +10,11 @@ declare namespace Cloudflare {
     MP_COLLECTOR_ID?: string;
     ADMIN_PASSWORD_HASH?: string;
     SESSION_SECRET?: string;
+    EMAIL_CONFIRMATIONS_ENABLED?: string;
+    RESEND_API_KEY?: string;
+    RESEND_FROM?: string;
+    RESEND_REPLY_TO?: string;
+    RESEND_WEBHOOK_SECRET?: string;
     PUBLIC_BASE_URL?: string;
     WHATSAPP_NUMBER?: string;
     SUPPORT_EMAIL?: string;

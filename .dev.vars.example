@@ -30,3 +30,10 @@ PHOTO_STORAGE_PROVIDER="r2"
 # Produção usa supabase e as variáveis abaixo, configuradas no Worker.
 SUPABASE_STORAGE_URL=""
 SUPABASE_STORAGE_PRIVATE_KEY=""
+
+# Confirmações transacionais. Habilitar apenas com domínio verificado e secrets no Worker.
+EMAIL_CONFIRMATIONS_ENABLED="false"
+RESEND_FROM=""
+RESEND_REPLY_TO=""
+RESEND_API_KEY=""
+RESEND_WEBHOOK_SECRET=""

@@ -56,3 +56,20 @@ export const photoCleanupJobs = sqliteTable("photo_cleanup_jobs", {
   notBefore: text("not_before").notNull(),
   createdAt: text("created_at").notNull(),
 }, t => [index("photo_cleanup_due").on(t.notBefore)]);
+
+export const emailOutbox = sqliteTable("email_outbox", {
+  id: text("id").primaryKey(), orderId: text("order_id").notNull(), kind: text("kind").notNull().default("order_confirmation"),
+  recipient: text("recipient"), status: text("status").notNull().default("pending"), payloadJson: text("payload_json"), resendEmailId: text("resend_email_id"),
+  attempts: integer("attempts").notNull().default(0), nextAttemptAt: text("next_attempt_at").notNull(), firstAttemptAt: text("first_attempt_at"), leaseUntil: text("lease_until"),
+  acceptedAt: text("accepted_at"), deliveryStatus: text("delivery_status"), deliveryRank: integer("delivery_rank").notNull().default(0), deliveryAt: text("delivery_at"),
+  lastError: text("last_error"), createdAt: text("created_at").notNull(), updatedAt: text("updated_at").notNull(),
+}, t => [uniqueIndex("email_outbox_order_kind").on(t.orderId,t.kind),uniqueIndex("email_outbox_provider_id").on(t.resendEmailId),index("email_outbox_due").on(t.status,t.nextAttemptAt)]);
+
+export const emailDeliveryEvents = sqliteTable("email_delivery_events", {
+  id: text("id").primaryKey(), eventType: text("event_type").notNull(), resendEmailId: text("resend_email_id").notNull(),
+  occurredAt: text("occurred_at").notNull(), receivedAt: text("received_at").notNull(), processedAt: text("processed_at"), outcome: text("outcome").notNull(), bodyHash: text("body_hash").notNull(),
+}, t => [index("email_delivery_events_message").on(t.resendEmailId,t.processedAt)]);
+
+export const emailSuppressions = sqliteTable("email_suppressions", {
+  recipientHash: text("recipient_hash").primaryKey(), reason: text("reason").notNull(), eventId: text("event_id").notNull(), createdAt: text("created_at").notNull(),
+});

@@ -20,6 +20,8 @@ export type AppEnv = PhotoStorageEnv & {
   UNPAID_RETENTION_HOURS?: string;
   KIRVANO_CHECKOUT_URL?: string; KIRVANO_WEBHOOK_TOKEN?: string; KIRVANO_PRODUCT_ID?: string; KIRVANO_OFFER_ID?: string;
   PULSEFY_CHECKOUT_URL?: string; PULSEFY_WEBHOOK_TOKEN?: string;
+  EMAIL_CONFIRMATIONS_ENABLED?: string; RESEND_API_KEY?: string; RESEND_FROM?: string;
+  RESEND_REPLY_TO?: string; RESEND_WEBHOOK_SECRET?: string;
 };
 export function boundedInt(value: string | undefined, fallback: number, min: number, max: number) {
   const n = Number(value); return value && Number.isInteger(n) && n >= min && n <= max ? n : fallback;

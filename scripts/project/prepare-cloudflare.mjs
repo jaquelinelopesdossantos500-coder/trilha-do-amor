@@ -8,7 +8,7 @@ config.account_id=production.account_id;config.routes=production.routes;config.w
 config.name=values.name;delete config.topLevelName;
 config.d1_databases=[{binding:"DB",database_name:"trilha-do-amor",database_id:values["database-id"],migrations_dir:"../../drizzle"}];
 config.r2_buckets=[]; // Production photographs use Supabase, not R2.
-config.triggers={crons:["0 * * * *"]};
+config.triggers=production.triggers;
 config.vars={...production.vars};
 config.observability={...production.observability};
 await writeFile("dist/server/cloudflare.wrangler.json",JSON.stringify(config,null,2)+"\n");
