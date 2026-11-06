@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import MetaPixel from "../components/meta-pixel";
 import "./preparation.css";
 import "./memorial-preview.css";
 export const metadata: Metadata = {
@@ -9,5 +10,5 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 };
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
-  return <html lang="pt-BR"><body>{children}</body></html>;
+  return <html lang="pt-BR"><body>{children}<MetaPixel/></body></html>;
 }

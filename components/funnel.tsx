@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useRef, useState, type ChangeEvent } from "react";
 import { Brand, Icon } from "./brand";
+import { trackMetaEvent,trackConfirmedPurchase } from "../lib/meta-pixel";
 import { orderWhatsappUrl } from "../lib/whatsapp";
 import { SCENARIOS, PRICE_CENTS, POLICY_VERSION, type publicConfig } from "../lib/configuration";
 import type { PublicOrder } from "../lib/order-types";
@@ -26,7 +27,7 @@ const post=(body:unknown):RequestInit=>({method:"POST",headers:{"Content-Type":"
 function usePhotoUrl(photo:File|null) {
   const [url,setUrl]=useState("");useEffect(()=>{if(!photo){setUrl("");return;}const u=URL.createObjectURL(photo);setUrl(u);return()=>URL.revokeObjectURL(u);},[photo]);return url;
 }
-function Footer(){return <footer className="footer"><nav aria-label="Informações"><a href="/termos">Termos de Uso</a><span>·</span><a href="/privacidade">Privacidade</a><span>·</span><a href="/entrega">Entrega e reembolso</a></nav><p>Uma recriação artística com inteligência artificial.</p><p className="footer-sign">O amor fica. A lembrança ganha vida.</p></footer>;}
+function Footer(){return <footer className="footer"><nav aria-label="Informações"><a href="/termos">Termos de Uso</a><span>·</span><a href="/privacidade">Privacidade</a><span>·</span><a href="/entrega">Entrega e reembolso</a></nav><p>Uma recriação artística com inteligência artificial.</p><button className="text-link" onClick={()=>window.dispatchEvent(new Event("tda-marketing-preferences"))}>Preferências de anúncios</button><p className="footer-sign">O amor fica. A lembrança ganha vida.</p></footer>;}
 
 export default function Funnel({initialReturn=false}:{initialReturn?:boolean}={}) {
   const [step,setStep]=useState<Step>(initialReturn?"pending":"scenes"),[selected,setSelected]=useState(""),[playing,setPlaying]=useState<string|null>(null);
@@ -81,6 +82,10 @@ export default function Funnel({initialReturn=false}:{initialReturn?:boolean}={}
     const timer=setInterval(async()=>{if(document.hidden)return;try{const {order:o}=await api(`/api/orders/${order.id}`);setOrder(o);if(["approved","refunded","cancelled"].includes(o.paymentStatus))setStep("success");}catch{/* Manual refresh remains available. */}},15000);
     return()=>clearInterval(timer);
   },[order?.id,step]);
+  useEffect(()=>{
+    const track=()=>{if(step==="checkout"&&order&&!order.isTest)trackMetaEvent('ViewContent',{content_ids:['trilha-do-amor'],content_type:'product',value:order.amountCents/100,currency:'BRL'},`tda_offer_${order.id}`);if(order)trackConfirmedPurchase(order);};
+    track();window.addEventListener('tda-marketing-enabled',track);return()=>window.removeEventListener('tda-marketing-enabled',track);
+  },[step,order?.id,order?.paymentStatus,order?.paymentTotalCents]);
   function go(next:Step){Object.values(videos.current).forEach(v=>v?.pause());setPlaying(null);setStep(next);}
   function newUploadIntent(){preparationWork.current=null;requestKey.current=clientUUID();restoredOrderId.current=null;storage.set("tda_request_key",requestKey.current);storage.remove("tda_order_id");}
   async function select(id:string){
@@ -146,7 +151,7 @@ export default function Funnel({initialReturn=false}:{initialReturn?:boolean}={}
     try{const cfg=await api<Config>("/api/config");setConfig(cfg);
       if(!cfg.storageReady)throw new Error("Não foi possível enviar suas fotos agora. Elas continuam neste navegador; tente novamente em instantes.");
       const current=order||await registerOrder();
-      const data=await api(`/api/orders/${current.id}/checkout`,post({}));if(data.approved){rememberOrder(data.order);go("success");}else if(data.simulation){rememberOrder(data.order);go("test");}else if(data.url){tabStorage.set("tda_checkout_order_id",current.id);location.assign(data.url);}else throw new Error("Não foi possível iniciar o pagamento. Tente novamente em instantes.");}
+      const data=await api(`/api/orders/${current.id}/checkout`,post({}));if(data.approved){rememberOrder(data.order);go("success");}else if(data.simulation){rememberOrder(data.order);go("test");}else if(data.url){tabStorage.set("tda_checkout_order_id",current.id);if(!current.isTest)trackMetaEvent("InitiateCheckout",{content_ids:["trilha-do-amor"],content_type:"product",value:current.amountCents/100,currency:"BRL",num_items:1},`tda_checkout_${current.id}`);location.assign(data.url);}else throw new Error("Não foi possível iniciar o pagamento. Tente novamente em instantes.");}
     catch(e){setError((e as Error).message);}finally{setBusy(false);}
   }
   async function simulate(status:string){if(!order)return;setBusy(true);setError("");try{const {order:o}=await api(`/api/orders/${order.id}/test-payment`,post({status}));rememberOrder(o);go(status==="approved"?"success":"pending");}catch(e){setError((e as Error).message);}finally{setBusy(false);}}
