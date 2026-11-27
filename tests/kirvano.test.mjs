@@ -28,7 +28,7 @@ async function checkout(o){const r=await call(`/api/orders/${o.order.id}/checkou
 async function prepared(){const o=await create();o.url=await checkout(o);return o;}
 function payload(o,event='SALE_APPROVED',overrides={}){
  const statuses={SALE_APPROVED:'APPROVED',SALE_REFUNDED:'REFUNDED',SALE_CHARGEBACK:'CHARGEBACK',SALE_REFUSED:'REFUSED',PIX_GENERATED:'PENDING',PIX_EXPIRED:'CANCELED',BANK_SLIP_GENERATED:'PENDING',BANK_SLIP_EXPIRED:'CANCELED'};
- return {event,status:statuses[event],sale_id:'SALE_'+(++saleSequence),checkout_id:'CHECKOUT_TEST',total_price:'R$ 27,90',type:'ONE_TIME',created_at:'2026-10-30 12:00:00',customer:{id:'BUYER_TEST',name:'Pessoa Fictícia',email:'pessoa@example.test',phone_number:'5511999999999',document:'MUST-NOT-BE-STORED'},products:[{id:env.KIRVANO_PRODUCT_ID,offer_id:env.KIRVANO_OFFER_ID,price:'R$ 27,90',is_order_bump:false}],utm:{src:o.url.searchParams.get('src')},...overrides};
+ return {event,status:statuses[event],sale_id:'SALE_'+(++saleSequence),checkout_id:'CHECKOUT_TEST',total_price:'R$ 9,90',type:'ONE_TIME',created_at:'2026-10-30 12:00:00',customer:{id:'BUYER_TEST',name:'Pessoa Fictícia',email:'pessoa@example.test',phone_number:'5511999999999',document:'MUST-NOT-BE-STORED'},products:[{id:env.KIRVANO_PRODUCT_ID,offer_id:env.KIRVANO_OFFER_ID,price:'R$ 9,90',is_order_bump:false}],utm:{src:o.url.searchParams.get('src')},...overrides};
 }
 async function notify(body,options={}){return call('/api/webhooks/kirvano?token='+env.KIRVANO_WEBHOOK_TOKEN,{method:'POST',data:body,...options});}
 async function row(o){return env.DB.prepare('SELECT * FROM orders WHERE id=?').bind(o.order.id).first();}
@@ -83,7 +83,7 @@ test('G: webhook recusa token ausente/incorreto e configuração incompleta',asy
 });
 test('G: produto, oferta, total, data e referência inválidos não aprovam pedidos',async()=>{
  const o=await prepared(),p=payload(o);
- for(const change of [{total_price:'R$ 0,01'},{total_price:'27.90'},{created_at:'2026-02-30 12:00:00'},{status:'PENDING'},{utm:{src:o.order.id}},{products:[{...p.products[0],offer_id:'wrong'}]},{products:[{...p.products[0],price:'R$ 1,00'}]},{products:[{...p.products[0],is_order_bump:true}]}])assert.equal((await notify({...p,...change})).response.status,422,JSON.stringify(change));
+ for(const change of [{total_price:'R$ 0,01'},{total_price:'27.90'},{created_at:'2026-02-30 12:00:00'},{status:'PENDING'},{utm:{src:o.order.id}},{products:[{...p.products[0],offer_id:'wrong'}]},{products:[{...p.products[0],price:'R$ 1,00'}]},{total_price:'R$ 27,90',products:[{...p.products[0],price:'R$ 27,90'}]},{products:[{...p.products[0],is_order_bump:true}]}])assert.equal((await notify({...p,...change})).response.status,422,JSON.stringify(change));
  const unmatched=await notify({...p,utm:{src:'tda_'+'a'.repeat(40)}});assert.equal(unmatched.data.outcome,'unmatched');assert.equal((await row(o)).payment_status,'pending');
 });
 test('G/I: pagamento aprovado persiste contatos e fotos sem clique no WhatsApp; duplicatas não renovam prazo',async()=>{

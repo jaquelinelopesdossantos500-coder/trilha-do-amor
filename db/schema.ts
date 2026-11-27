@@ -9,7 +9,7 @@ export const orders = sqliteTable("orders", {
   selfKey: text("self_key"), lovedKey: text("loved_key"), selfType: text("self_type"), lovedType: text("loved_type"),
   consentAt: text("consent_at").notNull(), policyVersion: text("policy_version").notNull(),
   name: text("name"), email: text("email"), whatsapp: text("whatsapp"),
-  amountCents: integer("amount_cents").notNull().default(2790),
+  amountCents: integer("amount_cents").notNull().default(990),
   paymentTotalCents: integer("payment_total_cents"), paymentCurrency: text("payment_currency"), paymentDetailsJson: text("payment_details_json"),
   paymentStatus: text("payment_status").notNull().default("pending"), paymentProvider: text("payment_provider"),
   paymentId: text("payment_id"), preferenceId: text("preference_id"), checkoutUrl: text("checkout_url"),

@@ -14,6 +14,10 @@ import type { DraftContext } from "../lib/client-media";
 
 type Config=ReturnType<typeof publicConfig>;
 type Step="scenes"|"photos"|"preparing"|"checkout"|"test"|"pending"|"success";
+function listedCents(order:PublicOrder|null|undefined,config:Config|null){
+  if(order&&["approved","refunded","cancelled"].includes(order.paymentStatus))return order.paymentTotalCents??order.amountCents;
+  return config?.priceCents??PRICE_CENTS;
+}
 export const money=(cents:number)=>new Intl.NumberFormat("pt-BR",{style:"currency",currency:"BRL"}).format(cents/100);
 export const date=(value:string|null)=>value?new Intl.DateTimeFormat("pt-BR",{dateStyle:"short",timeZone:"America/Sao_Paulo"}).format(new Date(value)):"A definir";
 export const statusNames:Record<string,string>={awaiting_payment:"Aguardando pagamento",awaiting_production:"Aguardando produção",in_production:"Em produção",ready:"Pronto para entrega",delivered:"Entregue",cancelled:"Cancelado",approved:"Confirmado",pending:"Aguardando confirmação",rejected:"Pagamento não aprovado",refunded:"Reembolsado"};
@@ -83,9 +87,9 @@ export default function Funnel({initialReturn=false}:{initialReturn?:boolean}={}
     return()=>clearInterval(timer);
   },[order?.id,step]);
   useEffect(()=>{
-    const track=()=>{if(step==="checkout"&&order&&!order.isTest)trackMetaEvent('ViewContent',{content_ids:['trilha-do-amor'],content_type:'product',value:order.amountCents/100,currency:'BRL'},`tda_offer_${order.id}`);if(order)trackConfirmedPurchase(order);};
+    const track=()=>{if(step==="checkout"&&order&&!order.isTest)trackMetaEvent('ViewContent',{content_ids:['trilha-do-amor'],content_type:'product',value:listedCents(order,config)/100,currency:'BRL'},`tda_offer_${order.id}`);if(order)trackConfirmedPurchase(order);};
     track();window.addEventListener('tda-marketing-enabled',track);return()=>window.removeEventListener('tda-marketing-enabled',track);
-  },[step,order?.id,order?.paymentStatus,order?.paymentTotalCents]);
+  },[step,order?.id,order?.paymentStatus,order?.paymentTotalCents,config?.priceCents]);
   function go(next:Step){Object.values(videos.current).forEach(v=>v?.pause());setPlaying(null);setStep(next);}
   function newUploadIntent(){preparationWork.current=null;requestKey.current=clientUUID();restoredOrderId.current=null;storage.set("tda_request_key",requestKey.current);storage.remove("tda_order_id");}
   async function select(id:string){
@@ -151,7 +155,7 @@ export default function Funnel({initialReturn=false}:{initialReturn?:boolean}={}
     try{const cfg=await api<Config>("/api/config");setConfig(cfg);
       if(!cfg.storageReady)throw new Error("Não foi possível enviar suas fotos agora. Elas continuam neste navegador; tente novamente em instantes.");
       const current=order||await registerOrder();
-      const data=await api(`/api/orders/${current.id}/checkout`,post({}));if(data.approved){rememberOrder(data.order);go("success");}else if(data.simulation){rememberOrder(data.order);go("test");}else if(data.url){tabStorage.set("tda_checkout_order_id",current.id);if(!current.isTest)trackMetaEvent("InitiateCheckout",{content_ids:["trilha-do-amor"],content_type:"product",value:current.amountCents/100,currency:"BRL",num_items:1},`tda_checkout_${current.id}`);location.assign(data.url);}else throw new Error("Não foi possível iniciar o pagamento. Tente novamente em instantes.");}
+      const data=await api(`/api/orders/${current.id}/checkout`,post({}));if(data.approved){rememberOrder(data.order);go("success");}else if(data.simulation){rememberOrder(data.order);go("test");}else if(data.url){tabStorage.set("tda_checkout_order_id",current.id);if(!current.isTest)trackMetaEvent("InitiateCheckout",{content_ids:["trilha-do-amor"],content_type:"product",value:(cfg.priceCents??PRICE_CENTS)/100,currency:"BRL",num_items:1},`tda_checkout_${current.id}`);location.assign(data.url);}else throw new Error("Não foi possível iniciar o pagamento. Tente novamente em instantes.");}
     catch(e){setError((e as Error).message);}finally{setBusy(false);}
   }
   async function simulate(status:string){if(!order)return;setBusy(true);setError("");try{const {order:o}=await api(`/api/orders/${order.id}/test-payment`,post({status}));rememberOrder(o);go(status==="approved"?"success":"pending");}catch(e){setError((e as Error).message);}finally{setBusy(false);}}
@@ -198,8 +202,8 @@ export default function Funnel({initialReturn=false}:{initialReturn?:boolean}={}
       {step==="checkout"&&(order||(self&&loved))&&<>
         <LockedMemorialPreview scenario={order?.scenario||selected} name={scene?.name||"Seu reencontro"}/>
         <div className="intro checkout-intro"><h1 ref={heading} tabIndex={-1}>Você está a um passo<br/>de transformar essa saudade<br/>em uma lembrança especial.</h1></div>
-        <section className="offer"><div className="offer-top"><Icon name="spark"/> SEU REENCONTRO PERSONALIZADO</div><div className="offer-content"><div className="price-row"><div><span>Pagamento único</span><small>Sem taxas adicionais</small></div><strong>{money(order?.amountCents??config?.priceCents??PRICE_CENTS)}</strong></div><ul className="deliverables"><li><Icon name="film"/><span><strong>1 vídeo de 8 segundos</strong><small>Vertical · formato 9:16</small></span><Icon name="check"/></li><li><Icon name="photo"/><span><strong>3 fotografias personalizadas</strong><small>Para guardar ou compartilhar · formato 1:1</small></span><Icon name="check"/></li><li><Icon name="phone"/><span><strong>Entrega pelo WhatsApp</strong><small>Arquivos digitais para guardar</small></span><Icon name="check"/></li></ul><div className="delivery-note"><Icon name="heart"/><p>Feito com cuidado para você.<br/><span>Produção manual com IA após o pagamento. Entrega em até <strong>{order?.deliveryDays??config?.deliveryDays??2} dias úteis</strong>.</span></p></div>
-          <div className="checkout-action"><p>Seus dados para entrega serão preenchidos no checkout seguro.</p><button type="button" className="primary" onClick={()=>{void pay();}} disabled={busy||!!photoBusy||(order?!order.photosAvailable:!self||!loved)}>{busy?<><span className="small-spinner"/> ABRINDO PAGAMENTO…</>:<>CRIAR MINHA HOMENAGEM <span>💛</span></>}</button></div>
+        <section className="offer"><div className="offer-top"><Icon name="spark"/> SEU REENCONTRO PERSONALIZADO</div><div className="offer-content"><div className="price-row"><div><span>Pagamento único</span><small>1 vídeo de 8s e 3 fotos</small></div><strong>{money(listedCents(order,config))}</strong></div><ul className="deliverables"><li><Icon name="film"/><span><strong>1 vídeo de 8 segundos</strong><small>Vertical · formato 9:16</small></span><Icon name="check"/></li><li><Icon name="photo"/><span><strong>3 fotografias personalizadas</strong><small>Para guardar ou compartilhar · formato 1:1</small></span><Icon name="check"/></li><li><Icon name="phone"/><span><strong>Entrega pelo WhatsApp</strong><small>Arquivos digitais para guardar</small></span><Icon name="check"/></li></ul><div className="delivery-note"><Icon name="heart"/><p>Feito com cuidado para você.<br/><span>Produção manual com IA após o pagamento. Entrega em até <strong>{order?.deliveryDays??config?.deliveryDays??2} dias úteis</strong>.</span></p></div>
+          <div className="checkout-action"><p>Seus dados para entrega serão preenchidos no checkout seguro. O valor acima é o pacote da homenagem; itens opcionais, se aparecerem no checkout, são somados ao total.</p><button type="button" className="primary" onClick={()=>{void pay();}} disabled={busy||!!photoBusy||(order?!order.photosAvailable:!self||!loved)}>{busy?<><span className="small-spinner"/> ABRINDO PAGAMENTO…</>:<>CRIAR MINHA HOMENAGEM <span>💛</span></>}</button></div>
           {order&&!order.photosAvailable&&<p className="error-message">O prazo das fotos terminou. Inicie um novo pedido para reenviá-las.</p>}
           <p className="secure-payment"><Icon name="lock"/>{config?.mode==="simulation"?"Checkout de teste · nenhuma cobrança real":config?.checkoutReady?"Pagamento seguro":"Pagamento único · sem mensalidade"}</p>
         </div></section><p className="art-note">Uma recriação artística com inteligência artificial, a partir das suas fotos. Os exemplos ilustram os cenários; cada resultado é único.</p>{order&&<p className="order-reference">Pedido {order.number}</p>}<button className="text-link reset-link" onClick={restart}>Começar um novo pedido</button>

@@ -2,7 +2,7 @@
 
 84 testes aprovados, incluindo 17 novos casos do receptor Pulsefy e dois casos de retorno/recibo. TypeScript aprovado. Cobertura: autenticação Bearer sem Origin, teste oficial sem aprovação, envio de acesso sem efeito financeiro, checkout/BRL/preço/correlação, adicionais, reentregas com timestamp diferente, migração de pedidos antigos do mesmo checkout, concorrência, reembolso e acesso por sessão. Nenhuma compra real foi realizada.
 
-O checkout de R$ 27,90, fotos privadas e WhatsApp foram preservados. A configuração do webhook e do retorno no painel Pulsefy é uma etapa do responsável; o teste do painel deve responder HTTP 200 e `test: true`. [Configuração exata](PULSEFY.md).
+Na validação de 31/10/2026 o checkout exibido era de R$ 27,90. A oferta vigente passou a ser R$ 9,90 (1 vídeo de 8s + 3 fotos). Fotos privadas e WhatsApp foram preservados. A configuração do webhook e do retorno no painel Pulsefy é uma etapa do responsável; o teste do painel deve responder HTTP 200 e `test: true`. [Configuração exata](PULSEFY.md).
 
 ---
 
@@ -28,7 +28,7 @@ Build limpo, TypeScript e 60 testes aprovados. QA local conferiu 360×800, 390×
 
 Em 31/10/2026, a API Cloudflare confirmou HTTP 200 e sucesso na versão `5c06dbf2f7664b659226c5d16d65e71c`. A publicação preservou os 34 assets, DB, os dois secrets, domínio, cron e Supabase; zero bindings R2. Os 51 módulos publicados correspondem ao build já validado, sem alteração no código de execução. A anotação `local-bf0ec84` identifica a fonte local, não um commit remoto GitHub.
 
-No domínio público, a sessão recuperou o mesmo pedido de QA `TDA-214570B6B5BF4115` e as duas imagens privadas (ambas decodificadas em 256×256). “Continuar com este pedido” exibiu o carrossel, confirmou fotos salvas e avançou automaticamente à oferta de R$ 27,90, mantendo cenário e ID. Não houve reenvio das fotos, nova cobrança ou compra real. As alterações posteriores a essa publicação são apenas documentação; a suíte de 57 testes, typecheck e build continua correspondendo ao código publicado.
+No domínio público, a sessão recuperou o mesmo pedido de QA `TDA-214570B6B5BF4115` e as duas imagens privadas (ambas decodificadas em 256×256). “Continuar com este pedido” exibiu o carrossel, confirmou fotos salvas e avançou automaticamente à oferta então vigente de R$ 27,90, mantendo cenário e ID. Não houve reenvio das fotos, nova cobrança ou compra real. As alterações posteriores a essa publicação são apenas documentação; a suíte de 57 testes, typecheck e build continua correspondendo ao código publicado.
 
 ---
 
@@ -62,7 +62,7 @@ As três fotos 896×1200 foram preservadas em WebP com enquadramento integral e 
 
 ## Conferência no navegador local
 
-Selecionado O abraço na luz; prévia e navegação para envio; arquivo inadequado rejeitado; duas fotos fictícias validadas; transição automática; pedido `TDA-9C6654D2C13041A9` registrado antes da oferta; oferta de R$ 27,90 sem campos de contato; botão abre simulador local sem fornecer dados pessoais. Pendência mostra mensagem de espera; aprovação simulada mostra pagamento confirmado e produção aguardando, mantendo o mesmo cenário/ID após recarregar. Larguras internas conferidas por DOM: 360/375/390/430px, todas com scrollWidth igual à largura.
+Selecionado O abraço na luz; prévia e navegação para envio; arquivo inadequado rejeitado; duas fotos fictícias validadas; transição automática; pedido `TDA-9C6654D2C13041A9` registrado antes da oferta; oferta então vigente de R$ 27,90 sem campos de contato; botão abre simulador local sem fornecer dados pessoais. Pendência mostra mensagem de espera; aprovação simulada mostra pagamento confirmado e produção aguardando, mantendo o mesmo cenário/ID após recarregar. Larguras internas conferidas por DOM: 360/375/390/430px, todas com scrollWidth igual à largura.
 
 O harness mobile existiu apenas durante o QA e foi removido do código e dos assets publicados. O simulador é restrito ao desenvolvimento e bloqueado na produção.
 

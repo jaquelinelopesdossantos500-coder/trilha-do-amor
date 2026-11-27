@@ -81,4 +81,4 @@ Reembolsos são feitos no painel Pulsefy, nunca só alterando o D1. O webhook re
 
 ## Adicionais comprados no checkout Pulsefy
 
-Conferir `payment_total_cents`, `payment_currency` e `payment_details_json` no mesmo pedido antes da produção. Os detalhes incluem gateway, identificação da cobrança e itens adicionais. O preço-base permanece em `amount_cents`; não presumir que o total pago seja igual ao preço-base quando houver order bumps. A venda Pulsefy fica em `payment_id`.
+Conferir `payment_total_cents`, `payment_currency` e `payment_details_json` no mesmo pedido antes da produção. Os detalhes incluem gateway, identificação da cobrança e itens adicionais. O preço-base vigente é R$ 9,90 (`amount_cents` = 990) e cobre 1 vídeo de 8s + 3 fotos. Não presumir que o total pago seja igual ao preço-base quando houver order bumps: o total é a base mais os adicionais escolhidos na Pulsefy. A venda Pulsefy fica em `payment_id`. Pedidos já pagos conservam o valor com que foram quitados.

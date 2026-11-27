@@ -21,7 +21,7 @@ As duas ilustrações de pessoas fictícias, geradas para demonstração, são `
 
 `LockedMemorialPreview` mantém a altura original de **160 px** e bordas de 15 px. Usa a imagem do cenário real do pedido, com `blur(8px)` apenas na imagem. O cadeado SVG dourado, o nome do cenário e a identificação de prévia ilustrativa permanecem nítidos. Os textos longos da primeira experiência foram removidos do card.
 
-O pacote de R$ 27,90 continua fora do banner, com produção após confirmação do pagamento. O CTA “CRIAR MINHA HOMENAGEM 💛” chama a integração existente, preservando a associação do pedido.
+O pacote de R$ 9,90 (1 vídeo de 8s + 3 fotos) continua fora do banner, com produção após confirmação do pagamento. O CTA “CRIAR MINHA HOMENAGEM 💛” chama a integração existente, preservando a associação do pedido.
 
 ## Persistência e validação
 

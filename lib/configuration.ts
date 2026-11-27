@@ -1,5 +1,5 @@
 import {storageConfigured,type PhotoStorageEnv} from "./storage-config";
-export const PRICE_CENTS = 2790;
+export const PRICE_CENTS = 990;
 export const KIRVANO_CHECKOUT_URL = "https://pulsefy.shop/c/o8gsg5c";
 export const PULSEFY_CHECKOUT_URL = KIRVANO_CHECKOUT_URL;
 export const POLICY_VERSION = "2026-10-30-v1";
