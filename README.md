@@ -1,12 +1,12 @@
 # Trilha do Amor
 
-Funil React/Vinext no domínio https://trilhadoamor.site/, hospedado no Worker Cloudflare existente `trilha-do-amor`. Jornada: cenário → duas fotos → carrossel emocional → oferta de R$ 27,90 → Pulsefy → confirmação por webhook → produção e entrega manual pelo WhatsApp.
+Funil React/Vinext no domínio https://trilhadoamor.site/, hospedado no Worker Cloudflare existente `trilha-do-amor`. Jornada: cenário → duas fotos → carrossel emocional → oferta de R$ 9,90 (1 vídeo de 8s + 3 fotos) → Pulsefy → confirmação por webhook → produção e entrega manual pelo WhatsApp. Itens opcionais, se existirem no checkout, somam-se a esse valor e não substituem o pacote.
 
 O site não pede nome, e-mail ou telefone. Esses dados são preenchidos no checkout e vinculados ao pedido pelo webhook autenticado. Não há geração automática de vídeo nem envio automático de mensagens no WhatsApp. A confirmação de compra é enviada por e-mail pelo Resend após o pagamento aprovado.
 
 ## Estado da integração
 
-Fotografias no Supabase Storage privado; D1 com migração 0006 para fila de e-mails e acompanhamento da entrega. O botão da oferta abre `https://pulsefy.shop/c/o8gsg5c`, preservando o pedido e uma referência `src` estável. O receptor `/api/webhooks/pulsefy` aceita o formato Pulsefy/Getfy com Bearer, confirma `pedido_pago` e trata reembolso sem duplicar pedidos. `/obrigado` acompanha o status e oferece recebimento no WhatsApp (53) 99190-5194. Para completar a conexão no provedor, cadastrar webhook/token/eventos e a URL de retorno conforme [PULSEFY.md](docs/PULSEFY.md), executar o teste do painel e acompanhar a primeira confirmação real. Nenhuma compra real foi realizada.
+Fotografias no Supabase Storage privado; D1 com migração 0006 para fila de e-mails e 0007 para alinhar pedidos ainda não pagos ao preço de R$ 9,90. O botão da oferta abre `https://pulsefy.shop/c/o8gsg5c`, preservando o pedido e uma referência `src` estável. O receptor `/api/webhooks/pulsefy` aceita o formato Pulsefy/Getfy com Bearer, confirma `pedido_pago` e trata reembolso sem duplicar pedidos. `/obrigado` acompanha o status e oferece recebimento no WhatsApp (53) 99190-5194. Para completar a conexão no provedor, cadastrar webhook/token/eventos e a URL de retorno conforme [PULSEFY.md](docs/PULSEFY.md), executar o teste do painel e acompanhar a primeira confirmação real. Nenhuma compra real foi realizada.
 
 Repositório do projeto: [jaquelinelopesdossantos500-coder/trilha-do-amor](https://github.com/jaquelinelopesdossantos500-coder/trilha-do-amor), público, com os fontes completos na branch `main`. Em 31/10/2026 a reautorização da instalação GitHub restabeleceu a gravação pelo conector; o commit inicial foi `b4183ed6d4701658ece4c72b32bebb74c35200b5`. A publicação do site utiliza a API Cloudflare, sem deploy automático GitHub configurado. Chaves privadas e dados de pedidos não fazem parte do repositório.
 

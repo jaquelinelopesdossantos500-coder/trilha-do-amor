@@ -1,6 +1,6 @@
 import { timingSafeEqual } from "node:crypto";
 import { z } from "zod";
-import { addBusinessDays, boundedInt, type AppEnv } from "./configuration";
+import { PRICE_CENTS, addBusinessDays, boundedInt, type AppEnv } from "./configuration";
 import { ApiError, hash, readJSON } from "./security";
 import { createHostedCheckout } from "./hosted-checkout";
 import { audit, getOrder } from "./repository";
@@ -58,7 +58,7 @@ export async function kirvanoWebhook(request:Request,env:AppEnv){
   if(!entry)return {received:true,ignored:true};
   if(entry.providerStatus!==p.status||!validEventTime(p.created_at))throw new ApiError(422,"Evento ou data incompatível.");
   const matching=p.products.find(item=>item.id===env.KIRVANO_PRODUCT_ID&&item.offer_id===env.KIRVANO_OFFER_ID&&!item.is_order_bump);
-  if(!matching||kirvanoCents(matching.price)!==2790||kirvanoCents(p.total_price)!==2790)throw new ApiError(422,"Produto, oferta ou valor incompatível.");
+  if(!matching||kirvanoCents(matching.price)!==PRICE_CENTS||kirvanoCents(p.total_price)!==PRICE_CENTS)throw new ApiError(422,"Produto, oferta ou valor incompatível.");
   const fingerprint=[p.event,p.sale_id,p.checkout_id,p.utm.src,p.created_at,p.status,p.total_price,matching.id,matching.offer_id].join("|");
   const eventId=await hash("kirvano:"+fingerprint),receivedAt=new Date().toISOString();
   const found=await env.DB!.prepare("SELECT * FROM orders WHERE checkout_reference=? AND payment_provider='kirvano'").bind(p.utm.src).first<OrderRow>();

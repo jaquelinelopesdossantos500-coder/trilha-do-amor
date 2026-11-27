@@ -30,11 +30,11 @@ async function row(o){return env.DB.prepare('SELECT * FROM orders WHERE id=?').b
 function payload(o,event='pedido_pago',overrides={}){
  const status=event==='reembolso'?'refunded':'completed';
  return {event,event_label:event==='reembolso'?'Reembolso':'Pedido pago',timestamp:'2026-10-31T12:00:00-03:00',payload:{
-  order:{id:++sale,status,amount:27.9,currency:'BRL',is_renewal:false,created_at:'2026-10-31T11:59:00-03:00'},
+  order:{id:++sale,status,amount:9.9,currency:'BRL',is_renewal:false,created_at:'2026-10-31T11:59:00-03:00'},
   customer:{name:'Cliente Fictício',email:'ficcao@example.test',phone:'(53) 99190-5194',cpf:'NEVER_STORE_THIS_DOCUMENT',password:'NEVER_STORE_ACCESS_PASSWORD'},
   checkout_link:checkoutUrl,checkoutUrl,product:{id:'fictional-main-product',name:'Trilha do Amor – Reencontro em Vídeo',billing_type:'one_time',checkout_slug:'o8gsg5c'},
   payment:{method:'pix',gateway:'fictional-gateway',gateway_transaction_id:'FICTIONAL_TRANSACTION'},tracking:{src:o.url.searchParams.get('src')},
-  amount:27.9,status:status==='completed'?'paid':'refunded',...overrides,
+  amount:9.9,status:status==='completed'?'paid':'refunded',...overrides,
  }};
 }
 async function notify(body,{token=testSecret,...options}={}){return call('/api/webhooks/pulsefy',{method:'POST',data:body,webhook:true,headers:token?{Authorization:'Bearer '+token}:{},...options});}
@@ -72,19 +72,19 @@ test('produto, checkout, moeda, preço, estado e correlação divergentes não a
 });
 test('pedido pago persiste venda, contato de entrega e prazo sem divulgar CPF, senha ou fotos',async()=>{
  const o=await prepared(),r=await notify(payload(o));assert.equal(r.data.outcome,'applied');const saved=await row(o);
- assert.equal(saved.payment_status,'approved');assert.equal(saved.production_status,'awaiting_production');assert.equal(saved.payment_total_cents,2790);assert.equal(saved.payment_currency,'BRL');assert.equal(saved.whatsapp,'53991905194');assert.equal(saved.email,'ficcao@example.test');assert.ok(saved.paid_at);assert.ok(saved.delivery_due_at);assert.ok(await env.BUCKET.head(saved.self_key));
+ assert.equal(saved.payment_status,'approved');assert.equal(saved.production_status,'awaiting_production');assert.equal(saved.amount_cents,990);assert.equal(saved.payment_total_cents,990);assert.equal(saved.payment_currency,'BRL');assert.equal(saved.whatsapp,'53991905194');assert.equal(saved.email,'ficcao@example.test');assert.ok(saved.paid_at);assert.ok(saved.delivery_due_at);assert.ok(await env.BUCKET.head(saved.self_key));
  const events=await env.DB.prepare('SELECT * FROM events WHERE order_id=?').bind(o.order.id).all();for(const secret of ['ficcao@example.test','NEVER_STORE_THIS_DOCUMENT','NEVER_STORE_ACCESS_PASSWORD'])assert.equal(JSON.stringify(events).includes(secret),false);
  assert.equal(JSON.stringify(saved).includes('NEVER_STORE_THIS_DOCUMENT'),false);assert.equal(JSON.stringify(saved).includes('NEVER_STORE_ACCESS_PASSWORD'),false);
- const publicOrder=(await call('/api/orders/'+o.order.id,{cookie:o.cookie})).data.order;assert.equal(publicOrder.paymentTotalCents,2790);assert.deepEqual(publicOrder.purchasedExtras,[]);assert.equal(JSON.stringify(publicOrder).includes('gatewayTransactionId'),false);
+ const publicOrder=(await call('/api/orders/'+o.order.id,{cookie:o.cookie})).data.order;assert.equal(publicOrder.amountCents,990);assert.equal(publicOrder.paymentTotalCents,990);assert.deepEqual(publicOrder.purchasedExtras,[]);assert.equal(JSON.stringify(publicOrder).includes('gatewayTransactionId'),false);
 });
 test('identificador opaco do gateway aceita pontuação sem controlar a identificação da venda',async()=>{
  const o=await prepared(),p=payload(o);p.payload.payment.gateway_transaction_id='pay:example/txn.123';
  assert.equal((await notify(p)).response.status,200);const saved=await row(o);assert.equal(saved.payment_id,String(p.payload.order.id));assert.equal(JSON.parse(saved.payment_details_json).gatewayTransactionId,'pay:example/txn.123');
 });
 test('order bumps preservam valor pago e itens de entrega sem alterar preço-base',async()=>{
- const o=await prepared(),p=payload(o,'pedido_pago',{order_bumps:[{product_id:'extra-restauracao',name:'Restauração de foto',amount:8.9,currency:'BRL'},{product_id:'extra-musica',name:'Música personalizada',amount:14.9,currency:'BRL'}],amount:51.7});p.payload.order.amount=51.7;
- assert.equal((await notify(p)).response.status,200);const saved=await row(o);assert.equal(saved.amount_cents,2790);assert.equal(saved.payment_total_cents,5170);
- const visible=(await call('/api/orders/'+o.order.id,{cookie:o.cookie})).data.order;assert.deepEqual(visible.purchasedExtras.map(x=>x.amountCents),[890,1490]);assert.equal(visible.paymentTotalCents,5170);
+ const o=await prepared(),p=payload(o,'pedido_pago',{order_bumps:[{product_id:'extra-restauracao',name:'Restauração de foto',amount:8.9,currency:'BRL'},{product_id:'extra-musica',name:'Música personalizada',amount:14.9,currency:'BRL'}],amount:33.7});p.payload.order.amount=33.7;
+ assert.equal((await notify(p)).response.status,200);const saved=await row(o);assert.equal(saved.amount_cents,990);assert.equal(saved.payment_total_cents,3370);
+ const visible=(await call('/api/orders/'+o.order.id,{cookie:o.cookie})).data.order;assert.deepEqual(visible.purchasedExtras.map(x=>x.amountCents),[890,1490]);assert.equal(visible.paymentTotalCents,3370);
 });
 test('reentregas com outro timestamp não duplicam confirmação nem renovam retenção ou prazo',async()=>{
  const o=await prepared(),p=payload(o);await notify(p);const before=await row(o);const again=await notify({...p,timestamp:'2026-10-31T19:00:00Z'});assert.equal(again.data.duplicate,true);

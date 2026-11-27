@@ -50,6 +50,13 @@
       "when": 1793506009905,
       "tag": "0006_order_confirmation_email",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "6",
+      "when": 1794300000000,
+      "tag": "0007_offer_price_990",
+      "breakpoints": true
     }
   ]
 }

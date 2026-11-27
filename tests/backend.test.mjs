@@ -88,7 +88,7 @@ test("webhook exige HMAC recente e consulta o provedor antes de aprovar",async()
  const path=`/api/webhooks/mercadopago?data.id=${id}`,headers={"x-request-id":rid,"x-signature":`ts=${ts},v1=${sig}`};
  assert.equal((await call(path,{method:"POST",data:{type:"payment",data:{id}},environment:mp})).r.status,401);
  assert.equal(await validWebhook(new Request("https://trilha.test"+path,{headers:{...headers,"x-signature":`ts=1000000000,v1=${sig}`}}),mp,id),false);
- let fetches=0;let payment={id,external_reference:order.id,status:"approved",currency_id:"BRL",transaction_amount:27.90,collector_id:123456,live_mode:false,date_last_updated:new Date().toISOString()};
+ let fetches=0;let payment={id,external_reference:order.id,status:"approved",currency_id:"BRL",transaction_amount:9.90,collector_id:123456,live_mode:false,date_last_updated:new Date().toISOString()};
  globalThis.fetch=async(url)=>{assert.equal(String(url),"https://api.mercadopago.com/v1/payments/"+id);fetches++;return Response.json(payment);};
  const good=await call(path,{method:"POST",headers,data:{type:"payment",data:{id}},environment:mp});assert.equal(good.r.status,200);assert.equal(fetches,1);
  assert.equal((await call(`/api/orders/${order.id}`,{cookie:session})).data.order.paymentStatus,"approved");
@@ -98,7 +98,7 @@ test("webhook exige HMAC recente e consulta o provedor antes de aprovar",async()
  assert.equal((await call(path,{method:"POST",headers,data:{type:"payment",data:{id:"outro"}},environment:mp})).r.status,400);
  for(const mismatch of [{transaction_amount:1},{currency_id:"USD"},{collector_id:42},{live_mode:true}]){
   payment={...payment,...mismatch};const r=await call(path,{method:"POST",headers,data:{type:"payment",data:{id}},environment:mp});assert.equal(r.r.status,422);
-  payment={id,external_reference:order.id,status:"approved",currency_id:"BRL",transaction_amount:27.90,collector_id:123456,live_mode:false,date_last_updated:new Date().toISOString()};
+  payment={id,external_reference:order.id,status:"approved",currency_id:"BRL",transaction_amount:9.90,collector_id:123456,live_mode:false,date_last_updated:new Date().toISOString()};
  }
  const updated=new Date(Date.now()+10000).toISOString();await applyProviderPayment(mp,{...payment,status:"refunded",date_last_updated:updated});
  await applyProviderPayment(mp,payment);assert.equal((await call(`/api/orders/${order.id}`,{cookie:session})).data.order.paymentStatus,"refunded");

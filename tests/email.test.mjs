@@ -19,11 +19,11 @@ after(async()=>{globalThis.fetch=originalFetch;await mf?.dispose();});
 async function order({email='buyer@example.test',status='pending',isTest=0}={}){
  const id=crypto.randomUUID(),now=new Date().toISOString(),paymentId=String(++sale),number='TDA-'+id.replaceAll('-','').slice(0,16).toUpperCase();
  await env.DB.prepare(`INSERT INTO orders (id,number,owner_hash,request_key,scenario,scenario_key,created_at,updated_at,consent_at,policy_version,delivery_days,photos_expires_at,upload_state,payment_status,payment_provider,payment_id,checkout_url,checkout_reference,email,name,is_test,payment_total_cents,payment_currency) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`)
- .bind(id,number,'fictional-owner',crypto.randomUUID(),'carinho','carinho-no-ceu',now,now,now,'2026-10-30-v1',2,now,'ready',status,'pulsefy',paymentId,'https://pulsefy.shop/c/o8gsg5c','tda_'+id.replaceAll('-','').padEnd(40,'a'),email,'Cliente <Fictício>',isTest,2790,'BRL').run();
+ .bind(id,number,'fictional-owner',crypto.randomUUID(),'carinho','carinho-no-ceu',now,now,now,'2026-10-30-v1',2,now,'ready',status,'pulsefy',paymentId,'https://pulsefy.shop/c/o8gsg5c','tda_'+id.replaceAll('-','').padEnd(40,'a'),email,'Cliente <Fictício>',isTest,990,'BRL').run();
  return env.DB.prepare('SELECT * FROM orders WHERE id=?').bind(id).first();
 }
 function event(o,{email=o.email,type='pedido_pago',test=false}={}){
- return {event:type,timestamp:new Date().toISOString(),payload:{...(test?{test:true}:{}),order:{id:o.payment_id,status:type==='reembolso'?'refunded':'completed',amount:27.9,currency:'BRL',is_renewal:false,created_at:new Date().toISOString()},checkout_link:o.checkout_url,product:{id:'fictional-product',name:'Homenagem',billing_type:'one_time'},payment:{method:'pix'},tracking:{src:o.checkout_reference},customer:{name:o.name,...(email?{email}:{})}}};
+ return {event:type,timestamp:new Date().toISOString(),payload:{...(test?{test:true}:{}),order:{id:o.payment_id,status:type==='reembolso'?'refunded':'completed',amount:9.9,currency:'BRL',is_renewal:false,created_at:new Date().toISOString()},checkout_link:o.checkout_url,product:{id:'fictional-product',name:'Homenagem',billing_type:'one_time'},payment:{method:'pix'},tracking:{src:o.checkout_reference},customer:{name:o.name,...(email?{email}:{})}}};
 }
 const row=o=>env.DB.prepare('SELECT * FROM orders WHERE id=?').bind(o.id).first();
 const job=o=>env.DB.prepare('SELECT * FROM email_outbox WHERE order_id=?').bind(o.id).first();

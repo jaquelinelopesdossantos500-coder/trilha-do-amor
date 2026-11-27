@@ -19,7 +19,7 @@ const nativeFetch=globalThis.fetch;
 let root,container,imageFailure=false,reduced=false;
 const requestKey="f42bebed-7444-4df0-9704-0061e83100d9";
 const orderId="ba62df60-c6b8-41eb-b0b0-548ef63f8040";
-const config={storageReady:true,checkoutReady:true,mode:"simulation",testEnvironment:true,policyVersion:"2026-10-30-v1",priceCents:2790,deliveryDays:2};
+const config={storageReady:true,checkoutReady:true,mode:"simulation",testEnvironment:true,policyVersion:"2026-10-30-v1",priceCents:990,deliveryDays:2};
 const order={id:orderId,number:"TA-TESTE",scenario:"carinho",amountCents:2790,paymentStatus:"pending",productionStatus:"awaiting_payment",photosAvailable:true,isTest:true,name:null,email:null,whatsapp:null,deliveryDays:2};
 const pending=()=>{let resolve,reject;const promise=new Promise((a,b)=>{resolve=a;reject=b;});return {promise,resolve,reject};};
 const tick=async(t,ms)=>{await act(async()=>{t.mock.timers.tick(ms);});};
@@ -167,7 +167,7 @@ test("a transição registra um pedido, preserva referências privadas e não re
  await waitFor(()=>container.querySelector('.transition-continue')?.disabled===false);
  assert.equal(uploads,1);assert.deepEqual(keys,[requestKey]);
  await tick(t,6000);await waitFor(()=>container.querySelector('.is-leaving'));await tick(t,280);
- assert.match(container.textContent,/R\$\s*27,90/);assert.match(container.textContent,/Pedido TA-TESTE/);
+ assert.match(container.textContent,/R\$\s*9,90/);assert.equal(container.textContent.includes("27,90"),false);assert.match(container.textContent,/Pedido TA-TESTE/);
  const saved=await loadDraft();assert.equal(saved.context.orderId,orderId);assert.equal(saved.context.stage,'checkout');assert.equal(saved.self,null);assert.equal(saved.loved,null);
  await act(async()=>root.unmount());root=createRoot(container);
  await act(async()=>root.render(React.createElement(Funnel)));

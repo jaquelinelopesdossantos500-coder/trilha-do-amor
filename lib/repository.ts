@@ -1,5 +1,5 @@
 import {photoStorage} from "./photo-storage";
-import type { AppEnv } from "./configuration";
+import { PRICE_CENTS, type AppEnv } from "./configuration";
 import type { OrderRow } from "./order-types";
 import { ApiError, owner } from "./security";
 export async function audit(env: AppEnv, orderId: string | null, kind: string, detail: string | null = null) {
@@ -9,6 +9,14 @@ export async function audit(env: AppEnv, orderId: string | null, kind: string, d
 export async function getOrder(env: AppEnv, id: string) {
   const o = await env.DB!.prepare("SELECT * FROM orders WHERE id = ?").bind(id).first<OrderRow>();
   if (!o) throw new ApiError(404, "Pedido não encontrado."); return o;
+}
+export async function alignUnpaidCatalogPrice(env: AppEnv, order: OrderRow) {
+  if (order.amount_cents === PRICE_CENTS || order.paid_at || order.payment_id) return order;
+  if (order.payment_status !== "pending" && order.payment_status !== "rejected") return order;
+  const now = new Date().toISOString();
+  await env.DB!.prepare("UPDATE orders SET amount_cents = ?, updated_at = ? WHERE id = ? AND paid_at IS NULL AND payment_id IS NULL AND payment_status IN ('pending','rejected') AND amount_cents <> ?")
+    .bind(PRICE_CENTS, now, order.id, PRICE_CENTS).run();
+  return getOrder(env, order.id);
 }
 export async function customerOrder(request: Request, env: AppEnv, id: string) {
   const hash = await owner(request, env);

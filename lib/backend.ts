@@ -5,7 +5,7 @@ import { PRICE_CENTS, POLICY_VERSION, SCENARIOS, publicConfig, localTesting, bou
 import { ApiError, assertOrigin, cookie, makeCookie, randomToken, hash, owner, requireAdmin, rateLimit, readBytes, readJSON, verifyPassword, secureResponse } from "./security";
 import { validateImage } from "./image-validation";
 import { visibleOrder, type OrderRow } from "./order-types";
-import { audit, getOrder, customerOrder, deletePhotos } from "./repository";
+import { alignUnpaidCatalogPrice, audit, getOrder, customerOrder, deletePhotos } from "./repository";
 import { createPreference, validWebhook, mercadoFetch, applyProviderPayment, reconcile, type ProviderPayment } from "./payments";
 import { createKirvanoCheckout, kirvanoWebhook } from "./kirvano";
 import { createHostedCheckout } from "./hosted-checkout";
@@ -29,7 +29,7 @@ async function createOrder(request: Request, env: AppEnv) {
   let existing = await env.DB!.prepare("SELECT * FROM orders WHERE owner_hash = ? AND request_key = ?").bind(who,key).first<OrderRow>();
   if (existing?.upload_state === "ready") {
     if (existing.scenario !== scenario) throw new ApiError(409,"Este envio já foi registrado com outro cenário. Inicie um novo pedido para alterar as fotos ou o cenário.");
-    return json({order:visibleOrder(existing)});
+    return json({order:visibleOrder(await alignUnpaidCatalogPrice(env, existing))});
   }
   if (existing?.upload_state === "failed" || existing && Date.parse(existing.created_at) < Date.now()-10*60000 && existing.upload_state === "uploading") {
     await deletePhotos(env,existing); await env.DB!.prepare("DELETE FROM orders WHERE id = ? AND upload_state != 'ready'").bind(existing.id).run(); existing=null;
@@ -71,7 +71,7 @@ async function createOrder(request: Request, env: AppEnv) {
 }
 
 async function checkout(request: Request, env: AppEnv, id: string) {
-  const o = await customerOrder(request,env,id), config = publicConfig(request,env);
+  const o = await alignUnpaidCatalogPrice(env, await customerOrder(request,env,id)), config = publicConfig(request,env);
   await rateLimit(request,env,"checkout",15,900);
   if (!config.checkoutReady) throw new ApiError(503,"Não foi possível iniciar o pagamento agora. Suas fotos continuam no pedido; tente novamente mais tarde.");
   if (o.upload_state !== "ready" || o.photos_deleted_at || o.photos_expires_at <= new Date().toISOString()) throw new ApiError(410,"O prazo de armazenamento das fotos terminou. Inicie um novo pedido.");
@@ -153,12 +153,13 @@ async function route(request: Request,env: AppEnv,context?: BackgroundContext): 
     // A missing browser reference must never be guessed from email or payment status.
     // Return a single checkout only when unambiguous; otherwise the owner chooses.
     const rows=await env.DB.prepare("SELECT * FROM orders WHERE owner_hash=? AND upload_state='ready' AND checkout_reference IS NOT NULL ORDER BY created_at DESC,id DESC LIMIT 11").bind(who).all<OrderRow>();
-    return json({order:rows.results.length===1?visibleOrder(rows.results[0]):null,orders:rows.results.length>1?rows.results.slice(0,10).map(visibleOrder):[]});
+    const aligned=await Promise.all(rows.results.map(row=>alignUnpaidCatalogPrice(env,row)));
+    return json({order:aligned.length===1?visibleOrder(aligned[0]):null,orders:aligned.length>1?aligned.slice(0,10).map(visibleOrder):[]});
   }
   const customer=path.match(/^\/api\/orders\/([a-f0-9-]{36})(?:\/(checkout|test-payment|reconcile|photos\/(self|loved)))?$/);
   if (customer) {
     const [,id,action,which]=customer;
-    if (!action && method==="GET") return json({order:visibleOrder(await customerOrder(request,env,id))});
+    if (!action && method==="GET") return json({order:visibleOrder(await alignUnpaidCatalogPrice(env, await customerOrder(request,env,id)))});
     if (action==="checkout" && method==="POST") return checkout(request,env,id);
     if (action==="test-payment" && method==="POST") return testPayment(request,env,id);
     if (action==="reconcile" && method==="POST") {
